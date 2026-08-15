@@ -42,60 +42,45 @@ export default function UploadDropzone({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const readSingleFile = (selectedFile: File): Promise<QueuedFile | null> => {
-    return new Promise((resolve) => {
-      const isHtml = selectedFile.name.toLowerCase().endsWith(".html");
-      const isPng = selectedFile.name.toLowerCase().endsWith(".png");
+  const readSingleFile = async (selectedFile: File): Promise<QueuedFile | null> => {
+    const isHtml = selectedFile.name.toLowerCase().endsWith(".html");
+    const isPng = selectedFile.name.toLowerCase().endsWith(".png");
 
-      if (!isHtml && !isPng) {
-        resolve(null);
-        return;
+    if (!isHtml && !isPng) {
+      return null;
+    }
+
+    const fileType = isPng ? "png" : "html";
+    const autoName = selectedFile.name
+      .replace(/\.(html|png)$/i, "")
+      .replace(/[-_]/g, " ")
+      .replace(/\b\w/g, (l) => l.toUpperCase());
+
+    const tempId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Fast light parsing of nodes for HTML files without loading 50MB string
+    let nodeCount: number | null = null;
+    if (isHtml && selectedFile.size < 5 * 1024 * 1024) {
+      try {
+        const textSample = await selectedFile.slice(0, 500 * 1024).text();
+        const stats = parsePyVisStats(textSample);
+        nodeCount = stats.nodeCount;
+      } catch (e) {
+        nodeCount = null;
       }
+    }
 
-      const fileType = isPng ? "png" : "html";
-      const autoName = selectedFile.name
-        .replace(/\.(html|png)$/i, "")
-        .replace(/[-_]/g, " ")
-        .replace(/\b\w/g, (l) => l.toUpperCase());
-
-      const tempId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const reader = new FileReader();
-
-      if (isPng) {
-        reader.onload = (e) => {
-          const content = (e.target?.result as string) || "";
-          resolve({
-            id: tempId,
-            file: selectedFile,
-            name: autoName,
-            description: "",
-            fileType,
-            content,
-            nodeCount: null,
-            edgeCount: null,
-            status: "idle",
-          });
-        };
-        reader.readAsDataURL(selectedFile);
-      } else {
-        reader.onload = (e) => {
-          const content = (e.target?.result as string) || "";
-          const stats = parsePyVisStats(content);
-          resolve({
-            id: tempId,
-            file: selectedFile,
-            name: autoName,
-            description: "",
-            fileType,
-            content,
-            nodeCount: stats.nodeCount,
-            edgeCount: stats.edgeCount,
-            status: "idle",
-          });
-        };
-        reader.readAsText(selectedFile);
-      }
-    });
+    return {
+      id: tempId,
+      file: selectedFile,
+      name: autoName,
+      description: "",
+      fileType,
+      content: "",
+      nodeCount,
+      edgeCount: null,
+      status: "idle",
+    };
   };
 
   const processSelectedFiles = async (files: FileList | File[]) => {

@@ -106,6 +106,19 @@ function isNeonConfigured(): boolean {
   return typeof databaseUrl === "string" && databaseUrl.trim().startsWith("postgres");
 }
 
+let migrationDone = false;
+async function ensureSchemaUpdated() {
+  if (migrationDone || !isNeonConfigured() || !databaseUrl) return;
+  try {
+    const sql = neon(databaseUrl);
+    await sql`ALTER TABLE files ADD COLUMN IF NOT EXISTS storage_key TEXT;`;
+    await sql`ALTER TABLE files ALTER COLUMN content DROP NOT NULL;`;
+    migrationDone = true;
+  } catch (err) {
+    console.warn("Neon DB auto-migration check:", err);
+  }
+}
+
 function getDrizzleClient() {
   if (!databaseUrl) throw new Error("No DATABASE_URL configured");
   const sql = neon(databaseUrl);
@@ -241,6 +254,7 @@ export async function deleteFolder(id: string): Promise<boolean> {
 export async function getFilesList(folderId?: string | null): Promise<FileMetadata[]> {
   if (isNeonConfigured()) {
     try {
+      await ensureSchemaUpdated();
       const db = getDrizzleClient();
       const selectFields = {
         id: schema.files.id,
@@ -285,6 +299,7 @@ export async function getFilesList(folderId?: string | null): Promise<FileMetada
 export async function getFileById(id: string): Promise<FileRecord | null> {
   if (isNeonConfigured()) {
     try {
+      await ensureSchemaUpdated();
       const db = getDrizzleClient();
       const rows = await db.select().from(schema.files).where(eq(schema.files.id, id)).limit(1);
       return rows[0] || null;

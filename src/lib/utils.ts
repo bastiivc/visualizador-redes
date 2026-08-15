@@ -35,16 +35,30 @@ export function parsePyVisStats(htmlString: string): { nodeCount: number | null;
     let nodeCount: number | null = null;
     let edgeCount: number | null = null;
 
-    const nodesMatch = htmlString.match(/nodes\s*=\s*new\s*vis\.DataSet\(\s*(\[[\s\S]*?\])\s*\)/i);
-    if (nodesMatch && nodesMatch[1]) {
-      const matches = nodesMatch[1].match(/\{[\s\S]*?\}/g);
-      if (matches) nodeCount = matches.length;
+    // Fast and safe search for nodes DataSet
+    const nodesIndex = htmlString.search(/nodes\s*=\s*new\s*vis\.DataSet/i);
+    if (nodesIndex !== -1) {
+      const sample = htmlString.slice(nodesIndex, nodesIndex + 500000);
+      const openBracket = sample.indexOf("[");
+      const closeBracket = sample.indexOf("]");
+      if (openBracket !== -1 && closeBracket > openBracket) {
+        const nodesContent = sample.slice(openBracket, closeBracket);
+        const matches = nodesContent.match(/id\s*:/g);
+        if (matches) nodeCount = matches.length;
+      }
     }
 
-    const edgesMatch = htmlString.match(/edges\s*=\s*new\s*vis\.DataSet\(\s*(\[[\s\S]*?\])\s*\)/i);
-    if (edgesMatch && edgesMatch[1]) {
-      const matches = edgesMatch[1].match(/\{[\s\S]*?\}/g);
-      if (matches) edgeCount = matches.length;
+    // Fast and safe search for edges DataSet
+    const edgesIndex = htmlString.search(/edges\s*=\s*new\s*vis\.DataSet/i);
+    if (edgesIndex !== -1) {
+      const sample = htmlString.slice(edgesIndex, edgesIndex + 500000);
+      const openBracket = sample.indexOf("[");
+      const closeBracket = sample.indexOf("]");
+      if (openBracket !== -1 && closeBracket > openBracket) {
+        const edgesContent = sample.slice(openBracket, closeBracket);
+        const matches = edgesContent.match(/from\s*:/g);
+        if (matches) edgeCount = matches.length;
+      }
     }
 
     return { nodeCount, edgeCount };
