@@ -18,8 +18,8 @@ export async function GET(
       );
     }
 
-    // Exclude htmlContent from metadata view
-    const { htmlContent, ...meta } = network;
+    // Exclude content from metadata view
+    const { content, ...meta } = network;
     return NextResponse.json(meta);
   } catch (error: any) {
     console.error("Error fetching single network:", error);

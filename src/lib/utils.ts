@@ -6,7 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatBytes(bytes: number, decimals = 1): string {
-  if (bytes === 0) return "0 Bytes";
+  if (!bytes || bytes === 0) return "0 Bytes";
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ["Bytes", "KB", "MB", "GB"];
@@ -35,10 +35,8 @@ export function parsePyVisStats(htmlString: string): { nodeCount: number | null;
     let nodeCount: number | null = null;
     let edgeCount: number | null = null;
 
-    // Pattern 1: vis.DataSet([ { ... }, { ... } ])
     const nodesMatch = htmlString.match(/nodes\s*=\s*new\s*vis\.DataSet\(\s*(\[[\s\S]*?\])\s*\)/i);
     if (nodesMatch && nodesMatch[1]) {
-      // Count items in array
       const matches = nodesMatch[1].match(/\{[\s\S]*?\}/g);
       if (matches) nodeCount = matches.length;
     }

@@ -1,12 +1,12 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, isNull } from "drizzle-orm";
 import * as schema from "./schema";
-import { NetworkMetadata, Network, NewNetwork } from "./schema";
+import { Folder, NewFolder, FileRecord, NewFileRecord, FileMetadata, FolderWithStats } from "./schema";
 
 const databaseUrl = process.env.DATABASE_URL;
 
-// Sample demo networks for out-of-the-box visualizer demonstration
+// Demo PyVis HTML content
 const SAMPLE_PYVIS_HTML_1 = `<!DOCTYPE html>
 <html>
 <head>
@@ -27,77 +27,58 @@ const SAMPLE_PYVIS_HTML_1 = `<!DOCTYPE html>
 <div id="mynetwork"></div>
 <script type="text/javascript">
   const nodes = new vis.DataSet([
-    { id: 1, label: "Fijación 1 (AOI_A)", color: "#38bdf8", size: 25, title: "Inicio de tarea visual" },
-    { id: 2, label: "Fijación 2 (AOI_B)", color: "#818cf8", size: 30, title: "Procesamiento de estímulo" },
-    { id: 3, label: "Fijación 3 (AOI_C)", color: "#c084fc", size: 20, title: "Verificación de hipótesis" },
-    { id: 4, label: "Pupila Dilatación High", color: "#f43f5e", size: 35, title: "Alta Carga Cognitiva" },
-    { id: 5, label: "Saccade Rápida", color: "#34d399", size: 18, title: "Transición de foco" }
+    { id: 1, label: "Fijación 1 (AOI_A)", color: "#38bdf8", size: 25 },
+    { id: 2, label: "Fijación 2 (AOI_B)", color: "#818cf8", size: 30 },
+    { id: 3, label: "Fijación 3 (AOI_C)", color: "#c084fc", size: 20 },
+    { id: 4, label: "Pupila Dilatación High", color: "#f43f5e", size: 35 },
+    { id: 5, label: "Saccade Rápida", color: "#34d399", size: 18 }
   ]);
   const edges = new vis.DataSet([
-    { from: 1, to: 2, label: "0.85", width: 3, color: { color: "#38bdf8" } },
-    { from: 2, to: 3, label: "0.62", width: 2, color: { color: "#818cf8" } },
-    { from: 2, to: 4, label: "0.94", width: 5, color: { color: "#f43f5e" } },
-    { from: 3, to: 4, label: "0.78", width: 3, color: { color: "#c084fc" } },
-    { from: 4, to: 5, label: "0.55", width: 2, color: { color: "#34d399" } },
-    { from: 5, to: 1, label: "0.40", width: 1, color: { color: "#38bdf8" } }
+    { from: 1, to: 2, label: "0.85", width: 3 },
+    { from: 2, to: 3, label: "0.62", width: 2 },
+    { from: 2, to: 4, label: "0.94", width: 5 },
+    { from: 3, to: 4, label: "0.78", width: 3 },
+    { from: 4, to: 5, label: "0.55", width: 2 },
+    { from: 5, to: 1, label: "0.40", width: 1 }
   ]);
   const container = document.getElementById("mynetwork");
-  const data = { nodes: nodes, edges: edges };
-  const options = {
-    nodes: { shape: "dot", font: { color: "#ffffff", size: 14 } },
-    edges: { smooth: { type: "continuous" }, font: { color: "#cbd5e1", size: 11, align: "middle" } },
-    physics: { barnesHut: { gravitationalConstant: -3000, centralGravity: 0.3, springLength: 120 } }
-  };
-  new vis.Network(container, data, options);
+  new vis.Network(container, { nodes, edges }, { physics: { stabilization: true } });
 </script>
 </body>
 </html>`;
 
-const SAMPLE_PYVIS_HTML_2 = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Scanpath Network Analysis</title>
-  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <style type="text/css">
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #090d16; color: #f8fafc; font-family: sans-serif; }
-    #mynetwork { width: 100%; height: 100vh; }
-  </style>
-</head>
-<body>
-<div id="mynetwork"></div>
-<script type="text/javascript">
-  const nodes = new vis.DataSet([
-    { id: "Header", label: "Área: Encabezado", color: "#fbbf24", size: 28 },
-    { id: "Chart", label: "Área: Gráfico Principal", color: "#10b981", size: 40 },
-    { id: "Legend", label: "Área: Leyenda", color: "#06b6d4", size: 22 },
-    { id: "Footer", label: "Área: Pie de Página", color: "#64748b", size: 18 }
-  ]);
-  const edges = new vis.DataSet([
-    { from: "Header", to: "Chart", label: "14 transiciones", width: 4, arrows: "to" },
-    { from: "Chart", to: "Legend", label: "9 transiciones", width: 3, arrows: "to" },
-    { from: "Legend", to: "Chart", label: "7 transiciones", width: 2, arrows: "to" },
-    { from: "Chart", to: "Footer", label: "3 transiciones", width: 1, arrows: "to" }
-  ]);
-  const container = document.getElementById("mynetwork");
-  const data = { nodes: nodes, edges: edges };
-  const options = {
-    nodes: { shape: "ellipse", font: { color: "#ffffff", size: 14 } },
-    edges: { smooth: { type: "curvedCW" }, font: { color: "#94a3b8", size: 12 } },
-    physics: { stabilization: true }
-  };
-  new vis.Network(container, data, options);
-</script>
-</body>
-</html>`;
+// Demo PNG Image Data URI
+const SAMPLE_PNG_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
-// In-Memory store for when DATABASE_URL is not provided or during local preview
-let inMemoryStore: Network[] = [
+// In-Memory Folders Store
+let inMemoryFolders: Folder[] = [
+  {
+    id: "f1111111-1111-4111-a111-111111111111",
+    name: "Red 1 - Carga Cognitiva",
+    description: "Carpeta principal con ensayos de pupila y mapas secuenciales.",
+    color: "cyan",
+    createdAt: new Date(Date.now() - 3600000 * 48),
+    updatedAt: new Date(Date.now() - 3600000 * 48),
+  },
+  {
+    id: "f2222222-2222-4222-a222-222222222222",
+    name: "Experimentos Eye-Tracking",
+    description: "Gráficos PNG y matrices de transición de miradas Scanpath.",
+    color: "purple",
+    createdAt: new Date(Date.now() - 3600000 * 24),
+    updatedAt: new Date(Date.now() - 3600000 * 24),
+  },
+];
+
+// In-Memory Files Store
+let inMemoryFiles: FileRecord[] = [
   {
     id: "d9b2a1e4-5c8f-4a3b-9e2d-1a8b7c6d5e4f",
+    folderId: "f1111111-1111-4111-a111-111111111111",
     name: "Red de Carga Cognitiva - Ensayo 1",
     description: "Análisis de pupila y secuencia de fijaciones en tarea de esfuerzo cognitivo elevado.",
-    htmlContent: SAMPLE_PYVIS_HTML_1,
+    fileType: "html",
+    content: SAMPLE_PYVIS_HTML_1,
     fileSizeBytes: 2150,
     nodeCount: 5,
     edgeCount: 6,
@@ -106,18 +87,19 @@ let inMemoryStore: Network[] = [
   },
   {
     id: "f8c7b6a5-4d3e-2f1a-0b9c-8d7e6f5a4b3c",
-    name: "Scanpath Network - Visual Search",
-    description: "Matriz de transición de miradas entre AOIs del tablero visual.",
-    htmlContent: SAMPLE_PYVIS_HTML_2,
+    folderId: "f2222222-2222-4222-a222-222222222222",
+    name: "Scanpath Network Diagram",
+    description: "Gráfico exportado en PNG con el flujo de áreas de interés.",
+    fileType: "png",
+    content: SAMPLE_PNG_DATA_URI,
     fileSizeBytes: 1840,
-    nodeCount: 4,
-    edgeCount: 4,
-    createdAt: new Date(Date.now() - 3600000 * 48),
-    updatedAt: new Date(Date.now() - 3600000 * 48),
+    nodeCount: null,
+    edgeCount: null,
+    createdAt: new Date(Date.now() - 3600000 * 12),
+    updatedAt: new Date(Date.now() - 3600000 * 12),
   },
 ];
 
-// Helper to check if Neon connection string is valid
 function isNeonConfigured(): boolean {
   return typeof databaseUrl === "string" && databaseUrl.trim().startsWith("postgres");
 }
@@ -128,56 +110,56 @@ function getDrizzleClient() {
   return drizzle(sql, { schema });
 }
 
-export async function getNetworksList(): Promise<NetworkMetadata[]> {
+/* =========================================================================
+   FOLDER OPERATIONS
+   ========================================================================= */
+
+export async function getFolders(): Promise<FolderWithStats[]> {
   if (isNeonConfigured()) {
     try {
       const db = getDrizzleClient();
-      const rows = await db
-        .select({
-          id: schema.networks.id,
-          name: schema.networks.name,
-          description: schema.networks.description,
-          fileSizeBytes: schema.networks.fileSizeBytes,
-          nodeCount: schema.networks.nodeCount,
-          edgeCount: schema.networks.edgeCount,
-          createdAt: schema.networks.createdAt,
-          updatedAt: schema.networks.updatedAt,
-        })
-        .from(schema.networks)
-        .orderBy(desc(schema.networks.createdAt));
-      return rows;
+      const rows = await db.select().from(schema.folders).orderBy(desc(schema.folders.createdAt));
+      
+      const allFiles = await db.select({ folderId: schema.files.folderId }).from(schema.files);
+      const counts: Record<string, number> = {};
+      allFiles.forEach((f) => {
+        if (f.folderId) {
+          counts[f.folderId] = (counts[f.folderId] || 0) + 1;
+        }
+      });
+
+      return rows.map((folder) => ({
+        ...folder,
+        fileCount: counts[folder.id] || 0,
+      }));
     } catch (err) {
-      console.warn("Neon DB query failed, using in-memory store fallback:", err);
+      console.warn("Neon DB getFolders failed, using fallback:", err);
     }
   }
 
-  // Fallback to in-memory store
-  return inMemoryStore
+  return inMemoryFolders
     .slice()
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map(({ htmlContent, ...meta }) => meta);
+    .map((folder) => ({
+      ...folder,
+      fileCount: inMemoryFiles.filter((f) => f.folderId === folder.id).length,
+    }));
 }
 
-export async function getNetworkById(id: string): Promise<Network | null> {
+export async function getFolderById(id: string): Promise<Folder | null> {
   if (isNeonConfigured()) {
     try {
       const db = getDrizzleClient();
-      const rows = await db
-        .select()
-        .from(schema.networks)
-        .where(eq(schema.networks.id, id))
-        .limit(1);
+      const rows = await db.select().from(schema.folders).where(eq(schema.folders.id, id)).limit(1);
       return rows[0] || null;
     } catch (err) {
-      console.warn("Neon DB query failed, checking in-memory store:", err);
+      console.warn("Neon DB getFolderById failed, using fallback:", err);
     }
   }
-
-  const found = inMemoryStore.find((n) => n.id === id);
-  return found || null;
+  return inMemoryFolders.find((f) => f.id === id) || null;
 }
 
-export async function createNetwork(data: NewNetwork): Promise<NetworkMetadata> {
+export async function createFolder(data: NewFolder): Promise<Folder> {
   const newId = crypto.randomUUID();
   const now = new Date();
 
@@ -185,32 +167,171 @@ export async function createNetwork(data: NewNetwork): Promise<NetworkMetadata> 
     try {
       const db = getDrizzleClient();
       const [inserted] = await db
-        .insert(schema.networks)
+        .insert(schema.folders)
+        .values({ ...data, id: newId })
+        .returning();
+      return inserted;
+    } catch (err) {
+      console.warn("Neon DB createFolder failed, using fallback:", err);
+    }
+  }
+
+  const record: Folder = {
+    id: newId,
+    name: data.name,
+    description: data.description || null,
+    color: data.color || "cyan",
+    createdAt: now,
+    updatedAt: now,
+  };
+  inMemoryFolders.unshift(record);
+  return record;
+}
+
+export async function updateFolder(id: string, data: Partial<NewFolder>): Promise<Folder | null> {
+  const now = new Date();
+
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      const [updated] = await db
+        .update(schema.folders)
+        .set({ ...data, updatedAt: now })
+        .where(eq(schema.folders.id, id))
+        .returning();
+      return updated || null;
+    } catch (err) {
+      console.warn("Neon DB updateFolder failed, using fallback:", err);
+    }
+  }
+
+  const index = inMemoryFolders.findIndex((f) => f.id === id);
+  if (index === -1) return null;
+  inMemoryFolders[index] = {
+    ...inMemoryFolders[index],
+    ...data,
+    updatedAt: now,
+  };
+  return inMemoryFolders[index];
+}
+
+export async function deleteFolder(id: string): Promise<boolean> {
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      await db.delete(schema.files).where(eq(schema.files.folderId, id));
+      await db.delete(schema.folders).where(eq(schema.folders.id, id));
+      return true;
+    } catch (err) {
+      console.warn("Neon DB deleteFolder failed, using fallback:", err);
+    }
+  }
+
+  inMemoryFolders = inMemoryFolders.filter((f) => f.id !== id);
+  inMemoryFiles = inMemoryFiles.filter((f) => f.folderId !== id);
+  return true;
+}
+
+/* =========================================================================
+   FILE OPERATIONS (.html and .png)
+   ========================================================================= */
+
+export async function getFilesList(folderId?: string | null): Promise<FileMetadata[]> {
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      const selectFields = {
+        id: schema.files.id,
+        folderId: schema.files.folderId,
+        name: schema.files.name,
+        description: schema.files.description,
+        fileType: schema.files.fileType,
+        fileSizeBytes: schema.files.fileSizeBytes,
+        nodeCount: schema.files.nodeCount,
+        edgeCount: schema.files.edgeCount,
+        createdAt: schema.files.createdAt,
+        updatedAt: schema.files.updatedAt,
+      };
+
+      if (folderId !== undefined) {
+        if (folderId === null || folderId === "root") {
+          return await db.select(selectFields).from(schema.files).where(isNull(schema.files.folderId)).orderBy(desc(schema.files.createdAt));
+        }
+        return await db.select(selectFields).from(schema.files).where(eq(schema.files.folderId, folderId)).orderBy(desc(schema.files.createdAt));
+      }
+
+      return await db.select(selectFields).from(schema.files).orderBy(desc(schema.files.createdAt));
+    } catch (err) {
+      console.warn("Neon DB getFilesList failed, using fallback:", err);
+    }
+  }
+
+  let filtered = inMemoryFiles.slice();
+  if (folderId !== undefined) {
+    if (folderId === null || folderId === "root") {
+      filtered = filtered.filter((f) => !f.folderId);
+    } else {
+      filtered = filtered.filter((f) => f.folderId === folderId);
+    }
+  }
+
+  return filtered
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .map(({ content, ...meta }) => meta);
+}
+
+export async function getFileById(id: string): Promise<FileRecord | null> {
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      const rows = await db.select().from(schema.files).where(eq(schema.files.id, id)).limit(1);
+      return rows[0] || null;
+    } catch (err) {
+      console.warn("Neon DB getFileById failed, using fallback:", err);
+    }
+  }
+
+  return inMemoryFiles.find((f) => f.id === id) || null;
+}
+
+export async function createFile(data: NewFileRecord): Promise<FileMetadata> {
+  const newId = crypto.randomUUID();
+  const now = new Date();
+
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      const [inserted] = await db
+        .insert(schema.files)
         .values({
           ...data,
           id: newId,
         })
         .returning({
-          id: schema.networks.id,
-          name: schema.networks.name,
-          description: schema.networks.description,
-          fileSizeBytes: schema.networks.fileSizeBytes,
-          nodeCount: schema.networks.nodeCount,
-          edgeCount: schema.networks.edgeCount,
-          createdAt: schema.networks.createdAt,
-          updatedAt: schema.networks.updatedAt,
+          id: schema.files.id,
+          folderId: schema.files.folderId,
+          name: schema.files.name,
+          description: schema.files.description,
+          fileType: schema.files.fileType,
+          fileSizeBytes: schema.files.fileSizeBytes,
+          nodeCount: schema.files.nodeCount,
+          edgeCount: schema.files.edgeCount,
+          createdAt: schema.files.createdAt,
+          updatedAt: schema.files.updatedAt,
         });
       return inserted;
     } catch (err) {
-      console.warn("Neon DB insert failed, falling back to in-memory store:", err);
+      console.warn("Neon DB createFile failed, using fallback:", err);
     }
   }
 
-  const newRecord: Network = {
+  const newRecord: FileRecord = {
     id: newId,
+    folderId: data.folderId || null,
     name: data.name,
     description: data.description || null,
-    htmlContent: data.htmlContent,
+    fileType: data.fileType || "html",
+    content: data.content,
     fileSizeBytes: data.fileSizeBytes,
     nodeCount: data.nodeCount || null,
     edgeCount: data.edgeCount || null,
@@ -218,23 +339,73 @@ export async function createNetwork(data: NewNetwork): Promise<NetworkMetadata> 
     updatedAt: now,
   };
 
-  inMemoryStore.unshift(newRecord);
-  const { htmlContent, ...meta } = newRecord;
+  inMemoryFiles.unshift(newRecord);
+  const { content, ...meta } = newRecord;
   return meta;
 }
 
-export async function deleteNetwork(id: string): Promise<boolean> {
+export async function updateFile(id: string, data: Partial<NewFileRecord>): Promise<FileMetadata | null> {
+  const now = new Date();
+
   if (isNeonConfigured()) {
     try {
       const db = getDrizzleClient();
-      await db.delete(schema.networks).where(eq(schema.networks.id, id));
-      return true;
+      const [updated] = await db
+        .update(schema.files)
+        .set({
+          ...data,
+          updatedAt: now,
+        })
+        .where(eq(schema.files.id, id))
+        .returning({
+          id: schema.files.id,
+          folderId: schema.files.folderId,
+          name: schema.files.name,
+          description: schema.files.description,
+          fileType: schema.files.fileType,
+          fileSizeBytes: schema.files.fileSizeBytes,
+          nodeCount: schema.files.nodeCount,
+          edgeCount: schema.files.edgeCount,
+          createdAt: schema.files.createdAt,
+          updatedAt: schema.files.updatedAt,
+        });
+      return updated || null;
     } catch (err) {
-      console.warn("Neon DB delete failed, updating in-memory store:", err);
+      console.warn("Neon DB updateFile failed, using fallback:", err);
     }
   }
 
-  const initialLength = inMemoryStore.length;
-  inMemoryStore = inMemoryStore.filter((n) => n.id !== id);
-  return inMemoryStore.length < initialLength;
+  const index = inMemoryFiles.findIndex((f) => f.id === id);
+  if (index === -1) return null;
+
+  inMemoryFiles[index] = {
+    ...inMemoryFiles[index],
+    ...data,
+    updatedAt: now,
+  };
+
+  const { content, ...meta } = inMemoryFiles[index];
+  return meta;
 }
+
+export async function deleteFile(id: string): Promise<boolean> {
+  if (isNeonConfigured()) {
+    try {
+      const db = getDrizzleClient();
+      await db.delete(schema.files).where(eq(schema.files.id, id));
+      return true;
+    } catch (err) {
+      console.warn("Neon DB deleteFile failed, using fallback:", err);
+    }
+  }
+
+  const initialLen = inMemoryFiles.length;
+  inMemoryFiles = inMemoryFiles.filter((f) => f.id !== id);
+  return inMemoryFiles.length < initialLen;
+}
+
+// Backward-compatibility export aliases
+export const getNetworksList = getFilesList;
+export const getNetworkById = getFileById;
+export const createNetwork = (data: any) => createFile({ ...data, fileType: "html" });
+export const deleteNetwork = deleteFile;
