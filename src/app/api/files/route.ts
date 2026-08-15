@@ -98,15 +98,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(newRecord, { status: 201 });
     }
 
-    // Handle JSON payload (legacy / small files)
+    // Handle JSON payload
     const body = await req.json();
-    const { name, description, fileType, content, folderId } = body;
+    const { name, description, fileType, content, folderId, storageKey: directStorageKey, fileSizeBytes: directSizeBytes, nodeCount: directNodes, edgeCount: directEdges } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
         { error: "El nombre del archivo es obligatorio." },
         { status: 400 }
       );
+    }
+
+    // Direct Supabase upload metadata (bypasses Vercel payload limits)
+    if (directStorageKey) {
+      const newRecord = await createFile({
+        folderId: folderId || null,
+        name: name.trim(),
+        description: description ? description.trim() : null,
+        fileType: fileType || "html",
+        content: null,
+        storageKey: directStorageKey,
+        fileSizeBytes: directSizeBytes || 0,
+        nodeCount: directNodes || null,
+        edgeCount: directEdges || null,
+      });
+
+      return NextResponse.json(newRecord, { status: 201 });
     }
 
     if (!content || typeof content !== "string") {

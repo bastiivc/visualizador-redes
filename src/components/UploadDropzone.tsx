@@ -151,6 +151,18 @@ export default function UploadDropzone({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const compressFileGzip = async (file: File): Promise<Blob> => {
+    if (typeof window !== "undefined" && "CompressionStream" in window && file.name.toLowerCase().endsWith(".html")) {
+      try {
+        const stream = file.stream().pipeThrough(new CompressionStream("gzip"));
+        return await new Response(stream).blob();
+      } catch (err) {
+        console.warn("Browser Gzip compression fallback:", err);
+      }
+    }
+    return file;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (queuedFiles.length === 0) {
@@ -169,6 +181,19 @@ export default function UploadDropzone({
     setError(null);
     setSuccessMsg(null);
 
+    // Fetch direct upload token (bypasses Vercel payload limits)
+    let uploadToken: { configured: boolean; url?: string; key?: string; bucket?: string } = { configured: false };
+    try {
+      const tokenRes = await fetch("/api/files/upload-token", {
+        headers: { "x-admin-key": adminKey },
+      });
+      if (tokenRes.ok) {
+        uploadToken = await tokenRes.json();
+      }
+    } catch (e) {
+      console.warn("Could not fetch upload token:", e);
+    }
+
     const total = queuedFiles.length;
     let successCount = 0;
     let failCount = 0;
@@ -178,34 +203,98 @@ export default function UploadDropzone({
       const item = queuedFiles[i];
       setUploadProgress({ current: i + 1, total });
 
-      // Update status to uploading
       setQueuedFiles((prev) =>
         prev.map((q) => (q.id === item.id ? { ...q, status: "uploading" } : q))
       );
 
       try {
-        const formData = new FormData();
-        formData.append("file", item.file);
-        formData.append("name", item.name.trim());
-        if (item.description.trim()) {
-          formData.append("description", item.description.trim());
-        }
-        if (selectedFolderId) {
-          formData.append("folderId", selectedFolderId);
-        }
-        formData.append("fileType", item.fileType);
+        if (uploadToken.configured && uploadToken.url && uploadToken.key && uploadToken.bucket) {
+          // DIRECT BROWSER -> SUPABASE STORAGE UPLOAD (0 Vercel limits)
+          const blobToUpload = await compressFileGzip(item.file);
+          const isGzipped = item.fileType === "html" && blobToUpload.size < item.file.size;
+          const ext = item.fileType === "png" ? ".png" : ".html";
+          const fileId = crypto.randomUUID();
+          const storageKey = isGzipped ? `${fileId}${ext}.gz` : `${fileId}${ext}`;
 
-        const res = await fetch("/api/files", {
-          method: "POST",
-          headers: {
-            "x-admin-key": adminKey,
-          },
-          body: formData,
-        });
+          const uploadUrl = `${uploadToken.url}/storage/v1/object/${uploadToken.bucket}/${storageKey}`;
+          const contentType = item.fileType === "png" ? "image/png" : "text/html; charset=utf-8";
 
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.error || `Error al subir "${item.name}".`);
+          const storageRes = await fetch(uploadUrl, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${uploadToken.key}`,
+              apikey: uploadToken.key,
+              "Content-Type": contentType,
+              "x-upsert": "true",
+            },
+            body: blobToUpload,
+          });
+
+          if (!storageRes.ok) {
+            const errText = await storageRes.text();
+            throw new Error(`Error en Supabase Storage (${storageRes.status}): ${errText}`);
+          }
+
+          // Send small metadata JSON payload (1 KB) to Vercel API
+          const res = await fetch("/api/files", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-admin-key": adminKey,
+            },
+            body: JSON.stringify({
+              name: item.name.trim(),
+              description: item.description.trim() || undefined,
+              folderId: selectedFolderId || undefined,
+              fileType: item.fileType,
+              storageKey,
+              fileSizeBytes: blobToUpload.size,
+              nodeCount: item.nodeCount,
+              edgeCount: item.edgeCount,
+            }),
+          });
+
+          let data: any = {};
+          try {
+            data = await res.json();
+          } catch (e) {
+            throw new Error(`Error del servidor (${res.statusText || res.status})`);
+          }
+
+          if (!res.ok) {
+            throw new Error(data.error || `Error al guardar "${item.name}".`);
+          }
+        } else {
+          // Local fallback using FormData
+          const formData = new FormData();
+          formData.append("file", item.file);
+          formData.append("name", item.name.trim());
+          if (item.description.trim()) {
+            formData.append("description", item.description.trim());
+          }
+          if (selectedFolderId) {
+            formData.append("folderId", selectedFolderId);
+          }
+          formData.append("fileType", item.fileType);
+
+          const res = await fetch("/api/files", {
+            method: "POST",
+            headers: {
+              "x-admin-key": adminKey,
+            },
+            body: formData,
+          });
+
+          let data: any = {};
+          try {
+            data = await res.json();
+          } catch (e) {
+            throw new Error(`Error del servidor (${res.statusText || res.status})`);
+          }
+
+          if (!res.ok) {
+            throw new Error(data.error || `Error al subir "${item.name}".`);
+          }
         }
 
         successCount++;
