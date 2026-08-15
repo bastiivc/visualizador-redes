@@ -1,8 +1,10 @@
 "use client";
 
-import { Folder, FileCode2, Edit3, Trash2, ChevronRight, HardDrive } from "lucide-react";
+import { useState } from "react";
+import { Folder, FileCode2, Edit3, Trash2, ChevronRight, Download, Loader2 } from "lucide-react";
 import { FolderWithStats } from "@/lib/db/schema";
 import { formatDate } from "@/lib/utils";
+import { downloadFolderAsZip } from "@/lib/zipUtils";
 
 interface FolderCardProps {
   folder: FolderWithStats;
@@ -13,6 +15,20 @@ interface FolderCardProps {
 }
 
 export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin }: FolderCardProps) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownloadZip = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDownloading(true);
+    try {
+      await downloadFolderAsZip(folder.id, folder.name);
+    } catch (err) {
+      console.error("Error al descargar carpeta:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div
       onClick={() => onClick(folder)}
@@ -31,29 +47,44 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
           </div>
         </div>
 
-        {/* Action Controls for Admin */}
-        {isAdmin && (
-          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-            {onEdit && (
-              <button
-                onClick={() => onEdit(folder)}
-                title="Editar Carpeta"
-                className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
+        {/* Action Controls */}
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={handleDownloadZip}
+            disabled={downloading}
+            title="Descargar carpeta completa (.zip)"
+            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-colors disabled:opacity-50"
+          >
+            {downloading ? (
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+            ) : (
+              <Download className="w-4 h-4" />
             )}
-            {onDelete && (
-              <button
-                onClick={() => onDelete(folder)}
-                title="Eliminar Carpeta"
-                className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        )}
+          </button>
+
+          {isAdmin && (
+            <>
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(folder)}
+                  title="Editar Carpeta"
+                  className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(folder)}
+                  title="Eliminar Carpeta"
+                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <p className="text-xs text-slate-400 line-clamp-2 min-h-[32px] mb-4">

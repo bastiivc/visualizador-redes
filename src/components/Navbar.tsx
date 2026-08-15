@@ -10,9 +10,10 @@ interface NavbarProps {
   adminKey: string | null;
   onAdminLogin: (key: string) => void;
   onAdminLogout: () => void;
+  onNavigateHome?: () => void;
 }
 
-export default function Navbar({ adminKey, onAdminLogin, onAdminLogout }: NavbarProps) {
+export default function Navbar({ adminKey, onAdminLogin, onAdminLogout, onNavigateHome }: NavbarProps) {
   const pathname = usePathname();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const isAdmin = Boolean(adminKey);
@@ -22,7 +23,13 @@ export default function Navbar({ adminKey, onAdminLogin, onAdminLogout }: Navbar
       <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link
+            href="/"
+            onClick={() => {
+              if (onNavigateHome) onNavigateHome();
+            }}
+            className="flex items-center gap-3 group cursor-pointer"
+          >
             <div className="p-2.5 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl text-slate-950 font-bold shadow-lg shadow-cyan-500/25 group-hover:scale-105 transition-transform duration-200">
               <Network className="w-5 h-5" />
             </div>
