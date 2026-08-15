@@ -18,6 +18,32 @@ export async function GET(
     }
 
     const contentType = fileRecord.fileType === "png" ? "image/png" : "text/html; charset=utf-8";
+    const searchParams = req.nextUrl.searchParams;
+    const allowPhysics = searchParams.get("physics") === "true";
+
+    // Immediate physics interceptor script to prevent Chrome 100% CPU freeze
+    const physicsInterceptorScript = `
+<script>
+  (function() {
+    var _vis = window.vis;
+    Object.defineProperty(window, 'vis', {
+      configurable: true,
+      get: function() { return _vis; },
+      set: function(v) {
+        _vis = v;
+        if (_vis && _vis.Network) {
+          var OrigNetwork = _vis.Network;
+          _vis.Network = function(container, data, options) {
+            options = options || {};
+            options.physics = { enabled: false };
+            return new OrigNetwork(container, data, options);
+          };
+        }
+      }
+    });
+  })();
+</script>
+`;
 
     // If file is saved in disk / S3 storage
     if (fileRecord.storageKey) {
@@ -33,8 +59,8 @@ export async function GET(
 
       const isGzipped = fileRecord.storageKey.endsWith(".gz");
 
-      // Inject automatic vis.js physics stabilization disabler for HTML files to prevent 100% CPU lockups
-      if (fileRecord.fileType === "html") {
+      // For HTML files, inject physics disabler at top of <head> unless explicitly enabled
+      if (fileRecord.fileType === "html" && !allowPhysics) {
         let textBuffer = buffer;
         if (isGzipped) {
           try {
@@ -46,21 +72,12 @@ export async function GET(
 
         let htmlString = textBuffer.toString("utf-8");
 
-        const physicsOptimizer = `
-<script>
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      if (window.network && typeof window.network.setOptions === 'function') {
-        window.network.setOptions({ physics: { enabled: false } });
-      }
-    }, 2500);
-  });
-</script>
-`;
-        if (htmlString.includes("</body>")) {
-          htmlString = htmlString.replace("</body>", `${physicsOptimizer}</body>`);
+        if (htmlString.includes("<head>")) {
+          htmlString = htmlString.replace("<head>", `<head>${physicsInterceptorScript}`);
+        } else if (htmlString.includes("<html>")) {
+          htmlString = htmlString.replace("<html>", `<html><head>${physicsInterceptorScript}</head>`);
         } else {
-          htmlString += physicsOptimizer;
+          htmlString = physicsInterceptorScript + htmlString;
         }
 
         return new NextResponse(htmlString, {
@@ -92,7 +109,6 @@ export async function GET(
     let inlineContent = fileRecord.content || "";
 
     if (fileRecord.fileType === "png") {
-      // Check if base64 data URI
       if (inlineContent.startsWith("data:image/png;base64,")) {
         const base64Data = inlineContent.replace(/^data:image\/png;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, "base64");
@@ -104,26 +120,14 @@ export async function GET(
           },
         });
       }
-    } else if (fileRecord.fileType === "html" && inlineContent) {
-      const physicsOptimizer = `
-<script>
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      if (window.network && typeof window.network.setOptions === 'function') {
-        window.network.setOptions({ physics: { enabled: false } });
-      }
-    }, 2500);
-  });
-</script>
-`;
-      if (inlineContent.includes("</body>")) {
-        inlineContent = inlineContent.replace("</body>", `${physicsOptimizer}</body>`);
+    } else if (fileRecord.fileType === "html" && inlineContent && !allowPhysics) {
+      if (inlineContent.includes("<head>")) {
+        inlineContent = inlineContent.replace("<head>", `<head>${physicsInterceptorScript}`);
       } else {
-        inlineContent += physicsOptimizer;
+        inlineContent = physicsInterceptorScript + inlineContent;
       }
     }
 
-    // Default HTML or text response
     return new NextResponse(inlineContent, {
       status: 200,
       headers: {
