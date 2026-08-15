@@ -67,6 +67,11 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
 
           {/* Quick Stats Badges */}
           <div className="hidden md:flex items-center gap-2">
+            {file.fileSizeBytes > 10 * 1024 * 1024 && (
+              <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[11px] font-semibold">
+                ⚡ Archivo Pesado (Streaming)
+              </span>
+            )}
             <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-300">
               <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
               {formatBytes(file.fileSizeBytes)}

@@ -17,7 +17,8 @@ export const files = pgTable("files", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   fileType: varchar("file_type", { length: 20 }).notNull(), // 'html' | 'png'
-  content: text("content").notNull(), // HTML string or data:image/png;base64,...
+  content: text("content"), // HTML string or data:image/png;base64,... (nullable if in storage)
+  storageKey: text("storage_key"), // Path or key in storage (local or S3/R2)
   fileSizeBytes: integer("file_size_bytes").notNull(),
   nodeCount: integer("node_count"),
   edgeCount: integer("edge_count"),

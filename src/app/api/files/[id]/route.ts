@@ -52,11 +52,25 @@ export async function PUT(
 
     // If new file content is provided (replacing the attached file!)
     if (content && typeof content === "string") {
-      updatePayload.content = content;
-      updatePayload.fileType = (fileType || existing.fileType).toLowerCase();
-      updatePayload.fileSizeBytes = Buffer.byteLength(content, "utf-8");
+      const normalizedFileType = (fileType || existing.fileType).toLowerCase();
+      const fileSizeBytes = Buffer.byteLength(content, "utf-8");
+      updatePayload.fileType = normalizedFileType;
+      updatePayload.fileSizeBytes = fileSizeBytes;
 
-      if (updatePayload.fileType === "html") {
+      if (fileSizeBytes > 2 * 1024 * 1024) {
+        const { saveStorageFile, deleteStorageFile } = await import("@/lib/storage");
+        if (existing.storageKey) {
+          await deleteStorageFile(existing.storageKey);
+        }
+        const buffer = Buffer.from(content, "utf-8");
+        const saved = await saveStorageFile(id, normalizedFileType, buffer);
+        updatePayload.storageKey = saved.storageKey;
+        updatePayload.content = null;
+      } else {
+        updatePayload.content = content;
+      }
+
+      if (normalizedFileType === "html") {
         const stats = parsePyVisStats(content);
         updatePayload.nodeCount = stats.nodeCount;
         updatePayload.edgeCount = stats.edgeCount;

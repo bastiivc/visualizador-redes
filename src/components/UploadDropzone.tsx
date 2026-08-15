@@ -199,19 +199,23 @@ export default function UploadDropzone({
       );
 
       try {
+        const formData = new FormData();
+        formData.append("file", item.file);
+        formData.append("name", item.name.trim());
+        if (item.description.trim()) {
+          formData.append("description", item.description.trim());
+        }
+        if (selectedFolderId) {
+          formData.append("folderId", selectedFolderId);
+        }
+        formData.append("fileType", item.fileType);
+
         const res = await fetch("/api/files", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
             "x-admin-key": adminKey,
           },
-          body: JSON.stringify({
-            folderId: selectedFolderId || null,
-            name: item.name.trim(),
-            description: item.description.trim() || undefined,
-            fileType: item.fileType,
-            content: item.content,
-          }),
+          body: formData,
         });
 
         const data = await res.json();

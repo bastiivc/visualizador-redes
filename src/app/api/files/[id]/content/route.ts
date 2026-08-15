@@ -16,10 +16,37 @@ export async function GET(
       });
     }
 
+    const contentType = fileRecord.fileType === "png" ? "image/png" : "text/html; charset=utf-8";
+
+    // If file is saved in disk / S3 storage
+    if (fileRecord.storageKey) {
+      const { getStorageFileBuffer } = await import("@/lib/storage");
+      const buffer = await getStorageFileBuffer(fileRecord.storageKey);
+
+      if (!buffer) {
+        return new NextResponse("<h1>404 - El archivo físico no existe en el servidor</h1>", {
+          status: 404,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
+        });
+      }
+
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Length": buffer.length.toString(),
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
+    }
+
+    // Inline content fallback
+    const inlineContent = fileRecord.content || "";
+
     if (fileRecord.fileType === "png") {
       // Check if base64 data URI
-      if (fileRecord.content.startsWith("data:image/png;base64,")) {
-        const base64Data = fileRecord.content.replace(/^data:image\/png;base64,/, "");
+      if (inlineContent.startsWith("data:image/png;base64,")) {
+        const base64Data = inlineContent.replace(/^data:image\/png;base64,/, "");
         const imageBuffer = Buffer.from(base64Data, "base64");
         return new NextResponse(imageBuffer, {
           status: 200,
@@ -32,10 +59,10 @@ export async function GET(
     }
 
     // Default HTML or text response
-    return new NextResponse(fileRecord.content, {
+    return new NextResponse(inlineContent, {
       status: 200,
       headers: {
-        "Content-Type": fileRecord.fileType === "png" ? "image/png" : "text/html; charset=utf-8",
+        "Content-Type": contentType,
         "Cache-Control": "public, max-age=3600, s-maxage=86400",
       },
     });

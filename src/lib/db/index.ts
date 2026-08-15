@@ -79,6 +79,7 @@ let inMemoryFiles: FileRecord[] = [
     description: "Análisis de pupila y secuencia de fijaciones en tarea de esfuerzo cognitivo elevado.",
     fileType: "html",
     content: SAMPLE_PYVIS_HTML_1,
+    storageKey: null,
     fileSizeBytes: 2150,
     nodeCount: 5,
     edgeCount: 6,
@@ -92,6 +93,7 @@ let inMemoryFiles: FileRecord[] = [
     description: "Gráfico exportado en PNG con el flujo de áreas de interés.",
     fileType: "png",
     content: SAMPLE_PNG_DATA_URI,
+    storageKey: null,
     fileSizeBytes: 1840,
     nodeCount: null,
     edgeCount: null,
@@ -331,7 +333,8 @@ export async function createFile(data: NewFileRecord): Promise<FileMetadata> {
     name: data.name,
     description: data.description || null,
     fileType: data.fileType || "html",
-    content: data.content,
+    content: data.content || null,
+    storageKey: data.storageKey || null,
     fileSizeBytes: data.fileSizeBytes,
     nodeCount: data.nodeCount || null,
     edgeCount: data.edgeCount || null,
@@ -340,7 +343,7 @@ export async function createFile(data: NewFileRecord): Promise<FileMetadata> {
   };
 
   inMemoryFiles.unshift(newRecord);
-  const { content, ...meta } = newRecord;
+  const { content, storageKey, ...meta } = newRecord;
   return meta;
 }
 
@@ -384,11 +387,17 @@ export async function updateFile(id: string, data: Partial<NewFileRecord>): Prom
     updatedAt: now,
   };
 
-  const { content, ...meta } = inMemoryFiles[index];
+  const { content, storageKey, ...meta } = inMemoryFiles[index];
   return meta;
 }
 
 export async function deleteFile(id: string): Promise<boolean> {
+  const existing = await getFileById(id);
+  if (existing?.storageKey) {
+    const { deleteStorageFile } = await import("@/lib/storage");
+    await deleteStorageFile(existing.storageKey);
+  }
+
   if (isNeonConfigured()) {
     try {
       const db = getDrizzleClient();
