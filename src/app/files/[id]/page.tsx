@@ -8,9 +8,9 @@ import { formatDate, formatBytes } from "@/lib/utils";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const fileRecord = await getFileById(id);
-  if (!fileRecord) return { title: "Archivo no encontrado - PyVis Hub" };
+  if (!fileRecord) return { title: "Archivo no encontrado - Redes PUCV" };
   return {
-    title: `${fileRecord.name} - Repositorio PyVis Hub`,
+    title: `${fileRecord.name} - Redes PUCV`,
     description: fileRecord.description || "Visualizador de grafos y diagramas",
   };
 }
