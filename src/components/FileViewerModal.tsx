@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Maximize2, Minimize2, ExternalLink, Download, RefreshCw, Layers, Cpu, HardDrive, ImageIcon, Play, Sparkles } from "lucide-react";
+import { X, Maximize2, Minimize2, ExternalLink, Download, RefreshCw, Layers, Cpu, HardDrive, ImageIcon, ZoomIn, ZoomOut, AlertTriangle } from "lucide-react";
 import { FileMetadata } from "@/lib/db/schema";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -14,17 +14,15 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [iframeKey, setIframeKey] = useState(0);
-  const [isIframeLoaded, setIsIframeLoaded] = useState(false);
-  const [userLoaded, setUserLoaded] = useState(false);
 
   if (!file) return null;
 
   const isPng = file.fileType === "png";
-  // Always require user click for HTML files to prevent modal freezing on open
-  const showIframeDirectly = isPng || userLoaded;
+
+  // HTML files stored > 3 MB (compressed Gzip equivalent to > 15MB uncompressed) or large sizes
+  const isTooLargeToView = !isPng && file.fileSizeBytes > 3 * 1024 * 1024;
 
   const handleRefresh = () => {
-    setIsIframeLoaded(false);
     setIframeKey((prev) => prev + 1);
     setZoomLevel(1);
   };
@@ -86,7 +84,29 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {showIframeDirectly && (
+            {isPng && (
+              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 mr-2">
+                <button
+                  onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
+                  title="Alejar zoom"
+                  className="p-1 text-slate-400 hover:text-white"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] text-slate-300 font-mono px-1">
+                  {Math.round(zoomLevel * 100)}%
+                </span>
+                <button
+                  onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
+                  title="Acercar zoom"
+                  className="p-1 text-slate-400 hover:text-white"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {!isTooLargeToView && !isPng && (
               <button
                 onClick={handleRefresh}
                 title="Reiniciar vista"
@@ -100,21 +120,21 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
             <button
               onClick={handleDownload}
               title="Descargar archivo"
-              className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors text-xs flex items-center gap-1.5"
+              className="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-lg transition-colors text-xs flex items-center gap-1.5 font-medium"
             >
               <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Descargar</span>
+              <span>Descargar</span>
             </button>
 
             <a
               href={`/files/${file.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              title="Abrir en pestaña nueva dedicada (60 FPS Fluido)"
-              className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg transition-all text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20"
+              title="Abrir en pestaña nueva"
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
             >
               <ExternalLink className="w-4 h-4" />
-              <span>Pestaña Nueva (Fluida)</span>
+              <span className="hidden sm:inline">Pestaña Nueva</span>
             </a>
 
             <button
@@ -145,59 +165,41 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
                 className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl border border-slate-800/80"
               />
             </div>
-          ) : !showIframeDirectly ? (
-            /* Safe On-Demand Loader Screen (0% CPU on modal open) */
-            <div className="max-w-lg w-full p-8 bg-slate-900/90 border border-slate-800 rounded-2xl text-center shadow-2xl space-y-6">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
-                <Sparkles className="w-8 h-8" />
+          ) : isTooLargeToView ? (
+            /* Automatic Alert for Large Files (> 10MB): Requests direct download */
+            <div className="max-w-md w-full p-8 bg-slate-900 border border-slate-800 rounded-2xl text-center shadow-2xl space-y-6">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <AlertTriangle className="w-8 h-8" />
               </div>
 
               <div>
                 <h3 className="text-lg font-bold text-white mb-2">
-                  Red Interactiva ({file.name})
+                  Archivo de Gran Tamaño ({formatBytes(file.fileSizeBytes)})
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Para disfrutar de la mejor velocidad a <strong className="text-cyan-400">60 FPS</strong> y sin congelar la ventana del navegador, te recomendamos abrir esta red en una pestaña nueva dedicada.
+                  Esta red es muy pesada para ser visualizada interactivamente en el navegador. Por favor descarga el archivo directamente para abrirlo en tu equipo.
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                <a
-                  href={`/files/${file.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>🚀 Abrir en Pestaña Dedicada (Recomendado)</span>
-                </a>
-
+              <div className="pt-2">
                 <button
-                  onClick={() => setUserLoaded(true)}
-                  className="w-full sm:w-auto px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2"
+                  onClick={handleDownload}
+                  className="w-full px-6 py-3.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
                 >
-                  <Play className="w-4 h-4 text-cyan-400" />
-                  <span>Ver en Modal</span>
+                  <Download className="w-4 h-4" />
+                  <span>Descargar Archivo Directamente</span>
                 </button>
               </div>
             </div>
           ) : (
-            <>
-              {!isIframeLoaded && (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm text-cyan-400 gap-3">
-                  <div className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs font-semibold">Cargando red interactiva...</span>
-                </div>
-              )}
-              <iframe
-                key={iframeKey}
-                src={`/api/files/${file.id}/content`}
-                title={file.name}
-                onLoad={() => setIsIframeLoaded(true)}
-                className="w-full h-full border-0"
-                allow="fullscreen"
-              />
-            </>
+            /* Automatic Iframe Render for standard files (< 5MB) */
+            <iframe
+              key={iframeKey}
+              src={`/api/files/${file.id}/content`}
+              title={file.name}
+              className="w-full h-full border-0"
+              allow="fullscreen"
+            />
           )}
         </div>
       </div>
