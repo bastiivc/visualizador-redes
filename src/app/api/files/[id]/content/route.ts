@@ -30,13 +30,20 @@ export async function GET(
         });
       }
 
+      const isGzipped = fileRecord.storageKey.endsWith(".gz");
+      const responseHeaders: Record<string, string> = {
+        "Content-Type": contentType,
+        "Content-Length": buffer.length.toString(),
+        "Cache-Control": "public, max-age=86400",
+      };
+
+      if (isGzipped) {
+        responseHeaders["Content-Encoding"] = "gzip";
+      }
+
       return new NextResponse(new Uint8Array(buffer), {
         status: 200,
-        headers: {
-          "Content-Type": contentType,
-          "Content-Length": buffer.length.toString(),
-          "Cache-Control": "public, max-age=86400",
-        },
+        headers: responseHeaders,
       });
     }
 

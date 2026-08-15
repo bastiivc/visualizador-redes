@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { Readable } from "stream";
+import zlib from "zlib";
 
 // Local storage directory
 const UPLOADS_DIR = path.join(process.cwd(), "public", "uploads");
@@ -20,7 +20,8 @@ function ensureUploadsDirExists() {
 }
 
 /**
- * Saves a file to Supabase Storage (if configured) or persistent local storage.
+ * Saves a file to Supabase Storage or persistent local storage.
+ * Automatically compresses HTML and large files using Gzip (level 9).
  * Returns the storageKey stored in DB.
  */
 export async function saveStorageFile(
@@ -29,8 +30,21 @@ export async function saveStorageFile(
   buffer: Buffer
 ): Promise<{ storageKey: string; fileSizeBytes: number }> {
   const safeExt = extension.startsWith(".") ? extension : `.${extension}`;
-  const filename = `${fileId}${safeExt}`;
-  const fileSizeBytes = buffer.length;
+
+  // Compress HTML or files larger than 256KB with Gzip
+  let finalBuffer = buffer;
+  let isCompressed = false;
+  if (safeExt === ".html" || buffer.length > 256 * 1024) {
+    try {
+      finalBuffer = zlib.gzipSync(buffer, { level: 9 });
+      isCompressed = true;
+    } catch (err) {
+      console.warn("Gzip compression failed, saving raw buffer:", err);
+    }
+  }
+
+  const filename = isCompressed ? `${fileId}${safeExt}.gz` : `${fileId}${safeExt}`;
+  const fileSizeBytes = finalBuffer.length;
 
   if (isSupabaseConfigured()) {
     try {
@@ -44,7 +58,7 @@ export async function saveStorageFile(
           "Content-Type": contentType,
           "x-upsert": "true",
         },
-        body: new Uint8Array(buffer),
+        body: new Uint8Array(finalBuffer),
       });
 
       if (res.ok) {
@@ -60,7 +74,7 @@ export async function saveStorageFile(
 
   ensureUploadsDirExists();
   const filePath = path.join(UPLOADS_DIR, filename);
-  await fs.promises.writeFile(filePath, buffer);
+  await fs.promises.writeFile(filePath, finalBuffer);
 
   return {
     storageKey: filename,
