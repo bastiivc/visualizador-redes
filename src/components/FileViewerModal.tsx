@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Maximize2, Minimize2, ExternalLink, Download, RefreshCw, Layers, Cpu, HardDrive, ImageIcon, ZoomIn, ZoomOut, Play, Sparkles } from "lucide-react";
+import { X, Maximize2, Minimize2, ExternalLink, Download, RefreshCw, Layers, Cpu, HardDrive, ImageIcon, Play, Sparkles } from "lucide-react";
 import { FileMetadata } from "@/lib/db/schema";
 import { formatBytes, formatDate } from "@/lib/utils";
 
@@ -15,15 +15,13 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
   const [zoomLevel, setZoomLevel] = useState(1);
   const [iframeKey, setIframeKey] = useState(0);
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
-  
-  // For massive files (> 15MB), ask before rendering iframe inside modal to protect UI smoothness
-  const isMassiveFile = (file?.fileSizeBytes || 0) > 15 * 1024 * 1024;
-  const [userLoadedMassive, setUserLoadedMassive] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
 
   if (!file) return null;
 
   const isPng = file.fileType === "png";
-  const showIframeDirectly = !isMassiveFile || userLoadedMassive;
+  // Always require user click for HTML files to prevent modal freezing on open
+  const showIframeDirectly = isPng || userLoaded;
 
   const handleRefresh = () => {
     setIsIframeLoaded(false);
@@ -74,11 +72,6 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
 
           {/* Quick Stats Badges */}
           <div className="hidden md:flex items-center gap-2">
-            {isMassiveFile && (
-              <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[11px] font-semibold animate-pulse">
-                ⚡ Red Masiva ({formatBytes(file.fileSizeBytes)})
-              </span>
-            )}
             <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-full text-xs text-slate-300">
               <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
               {formatBytes(file.fileSizeBytes)}
@@ -93,36 +86,16 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
-            {isPng && (
-              <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-lg p-1 mr-2">
-                <button
-                  onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
-                  title="Alejar zoom"
-                  className="p-1 text-slate-400 hover:text-white"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </button>
-                <span className="text-[11px] text-slate-300 font-mono px-1">
-                  {Math.round(zoomLevel * 100)}%
-                </span>
-                <button
-                  onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
-                  title="Acercar zoom"
-                  className="p-1 text-slate-400 hover:text-white"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </button>
-              </div>
+            {showIframeDirectly && (
+              <button
+                onClick={handleRefresh}
+                title="Reiniciar vista"
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="hidden sm:inline">Reiniciar</span>
+              </button>
             )}
-
-            <button
-              onClick={handleRefresh}
-              title="Reiniciar vista"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Reiniciar</span>
-            </button>
 
             <button
               onClick={handleDownload}
@@ -137,7 +110,7 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
               href={`/files/${file.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              title="Abrir en pestaña nueva dedicada (Recomendado para Redes Masivas)"
+              title="Abrir en pestaña nueva dedicada (60 FPS Fluido)"
               className="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-lg transition-all text-xs flex items-center gap-1.5 shadow-lg shadow-cyan-500/20"
             >
               <ExternalLink className="w-4 h-4" />
@@ -173,18 +146,18 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
               />
             </div>
           ) : !showIframeDirectly ? (
-            /* Massive File Safe Loader Prompt */
+            /* Safe On-Demand Loader Screen (0% CPU on modal open) */
             <div className="max-w-lg w-full p-8 bg-slate-900/90 border border-slate-800 rounded-2xl text-center shadow-2xl space-y-6">
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-amber-500/20 to-cyan-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                 <Sparkles className="w-8 h-8" />
               </div>
 
               <div>
                 <h3 className="text-lg font-bold text-white mb-2">
-                  Red Masiva Detectada ({formatBytes(file.fileSizeBytes)})
+                  Red Interactiva ({file.name})
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Para obtener la mejor fluidez a <strong className="text-cyan-400">60 FPS</strong> y evitar congelar la interfaz, te recomendamos abrir esta red en una pestaña dedicada.
+                  Para disfrutar de la mejor velocidad a <strong className="text-cyan-400">60 FPS</strong> y sin congelar la ventana del navegador, te recomendamos abrir esta red en una pestaña nueva dedicada.
                 </p>
               </div>
 
@@ -196,15 +169,15 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
                   className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>Abrir en Pestaña Dedicada (Recomendado)</span>
+                  <span>🚀 Abrir en Pestaña Dedicada (Recomendado)</span>
                 </a>
 
                 <button
-                  onClick={() => setUserLoadedMassive(true)}
+                  onClick={() => setUserLoaded(true)}
                   className="w-full sm:w-auto px-5 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2"
                 >
                   <Play className="w-4 h-4 text-cyan-400" />
-                  <span>Cargar en Modal</span>
+                  <span>Ver en Modal</span>
                 </button>
               </div>
             </div>
@@ -213,7 +186,7 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
               {!isIframeLoaded && (
                 <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-sm text-cyan-400 gap-3">
                   <div className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-xs font-semibold">Cargando red interactiva ({formatBytes(file.fileSizeBytes)})...</span>
+                  <span className="text-xs font-semibold">Cargando red interactiva...</span>
                 </div>
               )}
               <iframe

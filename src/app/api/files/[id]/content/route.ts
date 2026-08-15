@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFileById } from "@/lib/db";
+import zlib from "zlib";
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +32,46 @@ export async function GET(
       }
 
       const isGzipped = fileRecord.storageKey.endsWith(".gz");
+
+      // Inject automatic vis.js physics stabilization disabler for HTML files to prevent 100% CPU lockups
+      if (fileRecord.fileType === "html") {
+        let textBuffer = buffer;
+        if (isGzipped) {
+          try {
+            textBuffer = zlib.gunzipSync(buffer);
+          } catch (e) {
+            console.warn("Gunzip failed when injecting physics optimizer:", e);
+          }
+        }
+
+        let htmlString = textBuffer.toString("utf-8");
+
+        const physicsOptimizer = `
+<script>
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (window.network && typeof window.network.setOptions === 'function') {
+        window.network.setOptions({ physics: { enabled: false } });
+      }
+    }, 2500);
+  });
+</script>
+`;
+        if (htmlString.includes("</body>")) {
+          htmlString = htmlString.replace("</body>", `${physicsOptimizer}</body>`);
+        } else {
+          htmlString += physicsOptimizer;
+        }
+
+        return new NextResponse(htmlString, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Cache-Control": "public, max-age=86400",
+          },
+        });
+      }
+
       const responseHeaders: Record<string, string> = {
         "Content-Type": contentType,
         "Content-Length": buffer.length.toString(),
@@ -48,7 +89,7 @@ export async function GET(
     }
 
     // Inline content fallback
-    const inlineContent = fileRecord.content || "";
+    let inlineContent = fileRecord.content || "";
 
     if (fileRecord.fileType === "png") {
       // Check if base64 data URI
@@ -62,6 +103,23 @@ export async function GET(
             "Cache-Control": "public, max-age=86400",
           },
         });
+      }
+    } else if (fileRecord.fileType === "html" && inlineContent) {
+      const physicsOptimizer = `
+<script>
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      if (window.network && typeof window.network.setOptions === 'function') {
+        window.network.setOptions({ physics: { enabled: false } });
+      }
+    }, 2500);
+  });
+</script>
+`;
+      if (inlineContent.includes("</body>")) {
+        inlineContent = inlineContent.replace("</body>", `${physicsOptimizer}</body>`);
+      } else {
+        inlineContent += physicsOptimizer;
       }
     }
 
