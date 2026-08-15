@@ -20,7 +20,7 @@ function ensureUploadsDirExists() {
 }
 
 /**
- * Saves a file to Supabase Storage or persistent local storage.
+ * Saves a file to Supabase Storage (if configured) or persistent local storage.
  * Automatically compresses HTML and large files using Gzip (level 9).
  * Returns the storageKey stored in DB.
  */
@@ -47,28 +47,28 @@ export async function saveStorageFile(
   const fileSizeBytes = finalBuffer.length;
 
   if (isSupabaseConfigured()) {
-    try {
-      const contentType = safeExt === ".png" ? "image/png" : "text/html; charset=utf-8";
-      const uploadUrl = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`;
+    const cleanUrl = SUPABASE_URL!.trim().replace(/\/+$/, "");
+    const cleanKey = SUPABASE_SERVICE_KEY!.trim();
+    const contentType = safeExt === ".png" ? "image/png" : "text/html; charset=utf-8";
+    const uploadUrl = `${cleanUrl}/storage/v1/object/${SUPABASE_BUCKET}/${filename}`;
 
-      const res = await fetch(uploadUrl, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
-          "Content-Type": contentType,
-          "x-upsert": "true",
-        },
-        body: new Uint8Array(finalBuffer),
-      });
+    const res = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${cleanKey}`,
+        apikey: cleanKey,
+        "Content-Type": contentType,
+        "x-upsert": "true",
+      },
+      body: new Uint8Array(finalBuffer),
+    });
 
-      if (res.ok) {
-        return { storageKey: filename, fileSizeBytes };
-      } else {
-        const errText = await res.text();
-        console.warn("Supabase Storage upload failed, falling back to local disk:", errText);
-      }
-    } catch (err) {
-      console.warn("Supabase Storage error, using local fallback:", err);
+    if (res.ok) {
+      return { storageKey: filename, fileSizeBytes };
+    } else {
+      const errText = await res.text();
+      console.error(`Supabase Storage upload failed (${res.status}):`, errText);
+      throw new Error(`Error en Supabase Storage (${res.status}): ${errText || res.statusText}`);
     }
   }
 
@@ -88,12 +88,20 @@ export async function saveStorageFile(
 export async function getStorageFileBuffer(storageKey: string): Promise<Buffer | null> {
   if (isSupabaseConfigured()) {
     try {
-      const downloadUrl = `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${storageKey}`;
-      const res = await fetch(downloadUrl);
+      const cleanUrl = SUPABASE_URL!.trim().replace(/\/+$/, "");
+      const cleanKey = SUPABASE_SERVICE_KEY!.trim();
+      const downloadUrl = `${cleanUrl}/storage/v1/object/public/${SUPABASE_BUCKET}/${storageKey}`;
+      const res = await fetch(downloadUrl, {
+        headers: {
+          apikey: cleanKey,
+        },
+      });
 
       if (res.ok) {
         const arrayBuffer = await res.arrayBuffer();
         return Buffer.from(arrayBuffer);
+      } else {
+        console.warn(`Supabase Storage get file failed (${res.status}):`, await res.text());
       }
     } catch (err) {
       console.warn("Error reading from Supabase Storage, checking local fallback:", err);

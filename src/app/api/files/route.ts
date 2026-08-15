@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
-      { error: "Error al guardar el archivo." },
+      { error: error.message || "Error al guardar el archivo." },
       { status: 500 }
     );
   }
