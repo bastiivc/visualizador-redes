@@ -72,14 +72,13 @@ export default function AdminLoginModal({ isOpen, onClose, onSuccess }: AdminLog
               <KeyRound className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
                 type="password"
-                placeholder="Por defecto: admin123"
+                placeholder="Ingresa la clave de administrador..."
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 text-sm transition-all"
                 autoFocus
               />
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Clave demo predeterminada: <code className="text-cyan-400">admin123</code></p>
           </div>
 
           {error && (

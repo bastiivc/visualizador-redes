@@ -126,16 +126,18 @@ export default function FileViewerModal({ file, onClose }: FileViewerModalProps)
               <span>Descargar</span>
             </button>
 
-            <a
-              href={`/files/${file.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Abrir en pestaña nueva"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">Pestaña Nueva</span>
-            </a>
+            {!isTooLargeToView && (
+              <a
+                href={`/files/${file.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir en pestaña nueva"
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors text-xs flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="hidden sm:inline">Pestaña Nueva</span>
+              </a>
+            )}
 
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
