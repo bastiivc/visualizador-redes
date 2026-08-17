@@ -5,15 +5,19 @@ import { Eye, Download, Trash2, Calendar, HardDrive, Cpu, Share2, Check, FileCod
 import { FileMetadata } from "@/lib/db/schema";
 import { formatBytes, formatDate } from "@/lib/utils";
 
+import HoverMarquee from "@/components/common/HoverMarquee";
+import { Folder } from "lucide-react";
+
 interface FileTableProps {
   files: FileMetadata[];
+  folderMap?: Record<string, string>;
   onView: (file: FileMetadata) => void;
   onEdit?: (file: FileMetadata) => void;
   onDelete?: (id: string) => void;
   isAdmin?: boolean;
 }
 
-export default function FileTable({ files, onView, onEdit, onDelete, isAdmin }: FileTableProps) {
+export default function FileTable({ files, folderMap, onView, onEdit, onDelete, isAdmin }: FileTableProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopyLink = (id: string) => {
@@ -64,6 +68,7 @@ export default function FileTable({ files, onView, onEdit, onDelete, isAdmin }: 
           <tbody className="divide-y divide-slate-800/60 text-slate-300">
             {files.map((file) => {
               const isPng = file.fileType === "png";
+              const folderName = file.folderId && folderMap ? folderMap[file.folderId] : null;
               return (
                 <tr key={file.id} className="hover:bg-slate-800/40 transition-colors group">
                   <td className="py-3.5 px-4 whitespace-nowrap">
@@ -73,8 +78,16 @@ export default function FileTable({ files, onView, onEdit, onDelete, isAdmin }: 
                     </span>
                   </td>
 
-                  <td className="py-3.5 px-4">
-                    <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">{file.name}</div>
+                  <td className="py-3.5 px-4 max-w-xs">
+                    {folderName && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 mb-0.5">
+                        <Folder className="w-3 h-3 shrink-0" />
+                        <span className="truncate max-w-[120px]">{folderName}</span>
+                      </span>
+                    )}
+                    <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">
+                      <HoverMarquee text={file.name} />
+                    </div>
                     {file.description && (
                       <div className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">{file.description}</div>
                     )}

@@ -54,6 +54,7 @@ const SAMPLE_PNG_DATA_URI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA
 let inMemoryFolders: Folder[] = [
   {
     id: "f1111111-1111-4111-a111-111111111111",
+    parentId: null,
     name: "Red 1 - Carga Cognitiva",
     description: "Carpeta principal con ensayos de pupila y mapas secuenciales.",
     color: "cyan",
@@ -62,6 +63,7 @@ let inMemoryFolders: Folder[] = [
   },
   {
     id: "f2222222-2222-4222-a222-222222222222",
+    parentId: null,
     name: "Experimentos Eye-Tracking",
     description: "Gráficos PNG y matrices de transición de miradas Scanpath.",
     color: "purple",
@@ -113,6 +115,7 @@ async function ensureSchemaUpdated() {
     const sql = neon(databaseUrl);
     await sql`ALTER TABLE files ADD COLUMN IF NOT EXISTS storage_key TEXT;`;
     await sql`ALTER TABLE files ALTER COLUMN content DROP NOT NULL;`;
+    await sql`ALTER TABLE folders ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES folders(id) ON DELETE CASCADE;`;
     migrationDone = true;
   } catch (err) {
     console.warn("Neon DB auto-migration check:", err);
@@ -129,36 +132,61 @@ function getDrizzleClient() {
    FOLDER OPERATIONS
    ========================================================================= */
 
-export async function getFolders(): Promise<FolderWithStats[]> {
+export async function getFolders(parentId?: string | null): Promise<FolderWithStats[]> {
   if (isNeonConfigured()) {
     try {
+      await ensureSchemaUpdated();
       const db = getDrizzleClient();
-      const rows = await db.select().from(schema.folders).orderBy(desc(schema.folders.createdAt));
+      let rows: Folder[] = [];
+      if (parentId !== undefined) {
+        if (parentId === null || parentId === "root") {
+          rows = await db.select().from(schema.folders).where(isNull(schema.folders.parentId)).orderBy(desc(schema.folders.createdAt));
+        } else {
+          rows = await db.select().from(schema.folders).where(eq(schema.folders.parentId, parentId)).orderBy(desc(schema.folders.createdAt));
+        }
+      } else {
+        rows = await db.select().from(schema.folders).orderBy(desc(schema.folders.createdAt));
+      }
       
-      const allFiles = await db.select({ folderId: schema.files.folderId }).from(schema.files);
+      const allFiles = await db.select({ folderId: schema.files.folderId, fileSizeBytes: schema.files.fileSizeBytes }).from(schema.files);
       const counts: Record<string, number> = {};
+      const sizes: Record<string, number> = {};
       allFiles.forEach((f) => {
         if (f.folderId) {
           counts[f.folderId] = (counts[f.folderId] || 0) + 1;
+          sizes[f.folderId] = (sizes[f.folderId] || 0) + (f.fileSizeBytes || 0);
         }
       });
 
       return rows.map((folder) => ({
         ...folder,
         fileCount: counts[folder.id] || 0,
+        totalSizeBytes: sizes[folder.id] || 0,
       }));
     } catch (err) {
       console.warn("Neon DB getFolders failed, using fallback:", err);
     }
   }
 
-  return inMemoryFolders
-    .slice()
+  let filtered = inMemoryFolders.slice();
+  if (parentId !== undefined) {
+    if (parentId === null || parentId === "root") {
+      filtered = filtered.filter((f) => !f.parentId);
+    } else {
+      filtered = filtered.filter((f) => f.parentId === parentId);
+    }
+  }
+
+  return filtered
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map((folder) => ({
-      ...folder,
-      fileCount: inMemoryFiles.filter((f) => f.folderId === folder.id).length,
-    }));
+    .map((folder) => {
+      const folderFiles = inMemoryFiles.filter((f) => f.folderId === folder.id);
+      return {
+        ...folder,
+        fileCount: folderFiles.length,
+        totalSizeBytes: folderFiles.reduce((acc, curr) => acc + (curr.fileSizeBytes || 0), 0),
+      };
+    });
 }
 
 export async function getFolderById(id: string): Promise<Folder | null> {
@@ -180,6 +208,7 @@ export async function createFolder(data: NewFolder): Promise<Folder> {
 
   if (isNeonConfigured()) {
     try {
+      await ensureSchemaUpdated();
       const db = getDrizzleClient();
       const [inserted] = await db
         .insert(schema.folders)
@@ -193,6 +222,7 @@ export async function createFolder(data: NewFolder): Promise<Folder> {
 
   const record: Folder = {
     id: newId,
+    parentId: data.parentId || null,
     name: data.name,
     description: data.description || null,
     color: data.color || "cyan",
@@ -245,6 +275,21 @@ export async function deleteFolder(id: string): Promise<boolean> {
   inMemoryFolders = inMemoryFolders.filter((f) => f.id !== id);
   inMemoryFiles = inMemoryFiles.filter((f) => f.folderId !== id);
   return true;
+}
+
+export async function getFolderAncestors(folderId: string): Promise<Folder[]> {
+  const ancestors: Folder[] = [];
+  let currentId: string | null = folderId;
+  const visited = new Set<string>();
+
+  while (currentId && !visited.has(currentId)) {
+    visited.add(currentId);
+    const f = await getFolderById(currentId);
+    if (!f) break;
+    ancestors.unshift(f);
+    currentId = f.parentId || null;
+  }
+  return ancestors;
 }
 
 /* =========================================================================

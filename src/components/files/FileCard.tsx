@@ -5,15 +5,19 @@ import { Eye, Download, Trash2, Calendar, HardDrive, Cpu, Share2, Check, FileCod
 import { FileMetadata } from "@/lib/db/schema";
 import { formatBytes, formatDate } from "@/lib/utils";
 
+import HoverMarquee from "@/components/common/HoverMarquee";
+import { Folder } from "lucide-react";
+
 interface FileCardProps {
   file: FileMetadata;
+  folderName?: string;
   onView: (file: FileMetadata) => void;
   onEdit?: (file: FileMetadata) => void;
   onDelete?: (id: string) => void;
   isAdmin?: boolean;
 }
 
-export default function FileCard({ file, onView, onEdit, onDelete, isAdmin }: FileCardProps) {
+export default function FileCard({ file, folderName, onView, onEdit, onDelete, isAdmin }: FileCardProps) {
   const [copied, setCopied] = useState(false);
   const isPng = file.fileType === "png";
 
@@ -44,7 +48,7 @@ export default function FileCard({ file, onView, onEdit, onDelete, isAdmin }: Fi
   };
 
   return (
-    <div className="group relative flex flex-col bg-slate-900/90 border border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300">
+    <div className="group relative flex flex-col bg-slate-900/90 border border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 min-w-0">
       {/* Decorative Canvas Preview Header */}
       <div className="relative w-full h-28 bg-slate-950 rounded-xl overflow-hidden mb-4 border border-slate-800/60 flex items-center justify-center group-hover:border-cyan-500/30 transition-colors">
         <div className={`absolute inset-0 bg-gradient-to-br ${isPng ? "from-purple-500/10 via-pink-500/5" : "from-cyan-500/10 via-blue-500/5"} to-transparent opacity-60 group-hover:opacity-100 transition-opacity`} />
@@ -86,8 +90,17 @@ export default function FileCard({ file, onView, onEdit, onDelete, isAdmin }: Fi
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <h3 className="text-base font-semibold text-white group-hover:text-cyan-400 transition-colors truncate mb-1" title={file.name}>
-          {file.name}
+        {folderName && (
+          <div className="mb-1">
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+              <Folder className="w-3 h-3 shrink-0" />
+              <span className="truncate">{folderName}</span>
+            </span>
+          </div>
+        )}
+
+        <h3 className="text-base font-semibold text-white group-hover:text-cyan-400 transition-colors mb-1">
+          <HoverMarquee text={file.name} />
         </h3>
         <p className="text-xs text-slate-400 line-clamp-2 min-h-[32px] mb-3">
           {file.description || "Sin descripción."}

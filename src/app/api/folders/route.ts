@@ -3,9 +3,23 @@ import { getFolders, createFolder } from "@/lib/db";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET_KEY || "admin123";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const foldersList = await getFolders();
+    const { searchParams } = new URL(req.url);
+    const ancestorsOf = searchParams.get("ancestorsOf");
+    if (ancestorsOf) {
+      const { getFolderAncestors } = await import("@/lib/db");
+      const path = await getFolderAncestors(ancestorsOf);
+      return NextResponse.json(path);
+    }
+
+    const parentIdParam = searchParams.get("parentId");
+    let parentIdFilter: string | null | undefined = undefined;
+    if (parentIdParam !== null) {
+      parentIdFilter = parentIdParam === "root" || parentIdParam === "" ? null : parentIdParam;
+    }
+
+    const foldersList = await getFolders(parentIdFilter);
     return NextResponse.json(foldersList);
   } catch (error: any) {
     console.error("Error fetching folders:", error);
@@ -27,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, description, color } = body;
+    const { name, description, color, parentId } = body;
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -40,6 +54,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       description: description ? description.trim() : null,
       color: color || "cyan",
+      parentId: parentId || null,
     });
 
     return NextResponse.json(newFolder, { status: 201 });

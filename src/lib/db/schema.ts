@@ -3,6 +3,7 @@ import { pgTable, uuid, varchar, text, integer, timestamp } from "drizzle-orm/pg
 // Table: folders
 export const folders = pgTable("folders", {
   id: uuid("id").primaryKey().defaultRandom(),
+  parentId: uuid("parent_id"),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   color: varchar("color", { length: 50 }).default("cyan"),

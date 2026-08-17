@@ -7,6 +7,7 @@ import { Folder as FolderType } from "@/lib/db/schema";
 interface FolderModalProps {
   isOpen: boolean;
   folderToEdit?: FolderType | null;
+  parentId?: string | null;
   adminKey: string;
   onClose: () => void;
   onSuccess: () => void;
@@ -15,6 +16,7 @@ interface FolderModalProps {
 export default function FolderModal({
   isOpen,
   folderToEdit,
+  parentId,
   adminKey,
   onClose,
   onSuccess,
@@ -60,6 +62,7 @@ export default function FolderModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
+          parentId: folderToEdit ? undefined : (parentId || undefined),
         }),
       });
 

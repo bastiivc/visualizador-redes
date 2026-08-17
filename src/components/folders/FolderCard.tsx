@@ -6,6 +6,8 @@ import { FolderWithStats } from "@/lib/db/schema";
 import { formatDate } from "@/lib/utils";
 import { downloadFolderAsZip } from "@/lib/zipUtils";
 
+import HoverMarquee from "@/components/common/HoverMarquee";
+
 interface FolderCardProps {
   folder: FolderWithStats;
   onClick: (folder: FolderWithStats) => void;
@@ -32,18 +34,18 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
   return (
     <div
       onClick={() => onClick(folder)}
-      className="group relative flex flex-col bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer transition-all duration-300"
+      className="group relative flex flex-col bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer transition-all duration-300 min-w-0"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl text-cyan-400 group-hover:scale-105 transition-transform">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
             <Folder className="w-6 h-6 fill-cyan-500/20" />
           </div>
-          <div>
-            <h3 className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors line-clamp-1">
-              {folder.name}
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors">
+              <HoverMarquee text={folder.name} />
             </h3>
-            <p className="text-[11px] text-slate-400">Creada el {formatDate(folder.createdAt)}</p>
+            <p className="text-[11px] text-slate-400 truncate">Creada el {formatDate(folder.createdAt)}</p>
           </div>
         </div>
 
