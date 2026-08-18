@@ -50,6 +50,8 @@ export interface FileMetadata {
 export interface FolderWithStats extends Folder {
   fileCount?: number;
   totalSizeBytes?: number;
+  htmlCount?: number;
+  pngCount?: number;
 }
 
 // Backward-compatibility aliases

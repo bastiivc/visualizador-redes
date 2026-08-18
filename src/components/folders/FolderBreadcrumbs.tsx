@@ -39,13 +39,13 @@ export default function FolderBreadcrumbs({
   const trail = folderPath.length > 0 ? folderPath : currentFolder ? [currentFolder] : [];
 
   return (
-    <nav className="flex items-center justify-between gap-2 text-xs font-medium text-slate-400 mb-6 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-2.5">
+    <nav className="flex items-center justify-between gap-2 text-xs font-medium text-slate-600 dark:text-slate-400 mb-6 bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 shadow-sm dark:shadow-md transition-colors">
       <div className="flex items-center gap-2 truncate overflow-x-auto py-0.5">
         <button
           onClick={onNavigateHome}
-          className="flex items-center gap-1.5 hover:text-white transition-colors shrink-0"
+          className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
         >
-          <Home className="w-4 h-4 text-cyan-400" />
+          <Home className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
           <span>Repositorio Principal</span>
         </button>
 
@@ -53,18 +53,18 @@ export default function FolderBreadcrumbs({
           const isLast = index === trail.length - 1;
           return (
             <div key={folder.id} className="flex items-center gap-2 shrink-0 max-w-[200px]">
-              <ChevronRight className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600 shrink-0" />
               {isLast ? (
-                <div className="flex items-center gap-1.5 text-cyan-400 font-semibold truncate max-w-[180px]">
+                <div className="flex items-center gap-1.5 text-cyan-600 dark:text-cyan-400 font-semibold truncate max-w-[180px]">
                   <Folder className="w-4 h-4 shrink-0" />
                   <HoverMarquee text={folder.name} className="max-w-[160px]" />
                 </div>
               ) : (
                 <button
                   onClick={() => onNavigateToFolder && onNavigateToFolder(folder)}
-                  className="flex items-center gap-1.5 hover:text-white transition-colors truncate max-w-[180px]"
+                  className="flex items-center gap-1.5 hover:text-slate-900 dark:hover:text-white transition-colors truncate max-w-[180px]"
                 >
-                  <Folder className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <Folder className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                   <HoverMarquee text={folder.name} className="max-w-[160px]" />
                 </button>
               )}

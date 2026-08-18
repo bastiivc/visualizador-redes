@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import StatCards from "@/components/StatCards";
 import UploadDropzone from "@/components/UploadDropzone";
 import FolderCard from "@/components/folders/FolderCard";
+import FolderTable from "@/components/folders/FolderTable";
 import FolderBreadcrumbs from "@/components/folders/FolderBreadcrumbs";
 import FolderModal from "@/components/folders/FolderModal";
 import FileCard from "@/components/files/FileCard";
@@ -159,6 +160,8 @@ export default function AdminPage() {
   // Unified Filtering & Sorting
   const filteredFolders = folders
     .filter((f) => {
+      if (fileTypeFilter === "html" && (f.htmlCount || 0) === 0) return false;
+      if (fileTypeFilter === "png" && (f.pngCount || 0) === 0) return false;
       const query = searchQuery.toLowerCase().trim();
       if (!query) return true;
       return f.name.toLowerCase().includes(query) || (f.description && f.description.toLowerCase().includes(query));
@@ -195,7 +198,7 @@ export default function AdminPage() {
   const isFilterActive = searchQuery.trim() !== "" || fileTypeFilter !== "all" || sortBy !== "recent";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 transition-colors">
       <Navbar
         adminKey={adminKey}
         onAdminLogin={handleAdminLogin}
@@ -208,16 +211,16 @@ export default function AdminPage() {
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Admin Panel Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-600 dark:text-cyan-400 text-xs font-semibold mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>Vista Exclusiva de Administrador</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white">
               Gestión de Carpetas y Archivos
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Crea carpetas y subcarpetas, sube archivos HTML/PNG, edita nombres/descripciones y gestiona contenidos.
             </p>
           </div>
@@ -238,12 +241,12 @@ export default function AdminPage() {
 
         {/* Lock Overlay if unauthenticated */}
         {!adminKey ? (
-          <div className="p-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl max-w-xl mx-auto my-12 shadow-2xl">
-            <div className="p-4 bg-slate-900 border border-slate-800 text-cyan-400 rounded-2xl w-fit mx-auto mb-4">
+          <div className="p-12 text-center bg-white/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl mx-auto my-12 shadow-xl dark:shadow-2xl">
+            <div className="p-4 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-cyan-600 dark:text-cyan-400 rounded-2xl w-fit mx-auto mb-4">
               <Lock className="w-8 h-8" />
             </div>
-            <h2 className="text-xl font-bold text-white mb-2">Acceso Restringido</h2>
-            <p className="text-xs text-slate-400 mb-6">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Acceso Restringido</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
               El panel de gestión, carga y edición está reservado únicamente para Administradores.
             </p>
             <button
@@ -277,33 +280,33 @@ export default function AdminPage() {
             />
 
             {/* Toolbar */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 mb-6 shadow-lg">
+            <div className="bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6 shadow-sm dark:shadow-lg transition-colors">
               <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
                 {/* Search input */}
                 <div className="relative flex-1 min-w-[240px]">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     placeholder={currentFolder ? `Filtrar en "${currentFolder.name}"...` : "Filtrar en todo el repositorio..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white text-xs placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
 
                 {/* Filters & Actions */}
                 <div className="flex flex-wrap items-center gap-3 justify-end">
                   {/* Format Filter */}
-                  <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5">
-                    <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                  <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-1.5">
+                    <Filter className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
                     <select
                       value={fileTypeFilter}
                       onChange={(e: any) => setFileTypeFilter(e.target.value)}
-                      className="bg-transparent text-xs text-slate-300 focus:outline-none cursor-pointer pr-1"
+                      className="bg-transparent text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer pr-1"
                     >
-                      <option value="all" className="bg-slate-900 text-white">Todos los formatos</option>
-                      <option value="html" className="bg-slate-900 text-white">Grafos HTML (PyVis)</option>
-                      <option value="png" className="bg-slate-900 text-white">Imágenes PNG</option>
+                      <option value="all" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Todos los formatos</option>
+                      <option value="html" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Grafos HTML (PyVis)</option>
+                      <option value="png" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Imágenes PNG</option>
                     </select>
                   </div>
 
@@ -311,24 +314,24 @@ export default function AdminPage() {
                   <select
                     value={sortBy}
                     onChange={(e: any) => setSortBy(e.target.value)}
-                    className="px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    className="px-3.5 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-700 dark:text-slate-300 focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
-                    <option value="recent">Más Recientes</option>
-                    <option value="oldest">Más Antiguos</option>
-                    <option value="name-asc">Nombre (A - Z)</option>
-                    <option value="name-desc">Nombre (Z - A)</option>
-                    <option value="size-desc">Mayor Tamaño</option>
-                    <option value="size-asc">Menor Tamaño</option>
-                    <option value="nodes-desc">Mayor N° de Nodos</option>
+                    <option value="recent" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Más Recientes</option>
+                    <option value="oldest" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Más Antiguos</option>
+                    <option value="name-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Nombre (A - Z)</option>
+                    <option value="name-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Nombre (Z - A)</option>
+                    <option value="size-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Mayor Tamaño</option>
+                    <option value="size-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Menor Tamaño</option>
+                    <option value="nodes-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">Mayor N° de Nodos</option>
                   </select>
 
                   {/* View Mode */}
-                  <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1">
+                  <div className="flex items-center bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-1">
                     <button
                       onClick={() => setViewMode("table")}
                       title="Vista Tabla"
                       className={`p-1.5 rounded-lg transition-colors ${
-                        viewMode === "table" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300"
+                        viewMode === "table" ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       }`}
                     >
                       <Table className="w-4 h-4" />
@@ -337,7 +340,7 @@ export default function AdminPage() {
                       onClick={() => setViewMode("grid")}
                       title="Vista Tarjetas"
                       className={`p-1.5 rounded-lg transition-colors ${
-                        viewMode === "grid" ? "bg-cyan-500/20 text-cyan-400" : "text-slate-500 hover:text-slate-300"
+                        viewMode === "grid" ? "bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                       }`}
                     >
                       <LayoutGrid className="w-4 h-4" />
@@ -347,7 +350,7 @@ export default function AdminPage() {
                   <button
                     onClick={loadData}
                     title="Actualizar"
-                    className="p-2 bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors"
+                    className="p-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl transition-colors"
                   >
                     <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
                   </button>
@@ -356,21 +359,21 @@ export default function AdminPage() {
 
               {/* Active Filters Pill Bar */}
               {isFilterActive && (
-                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-800 text-xs">
+                <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-xs">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-slate-400 font-medium">Filtros activos:</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-medium">Filtros activos:</span>
                     {searchQuery && (
-                      <span className="px-2.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg">
+                      <span className="px-2.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 rounded-lg">
                         Texto: "{searchQuery}"
                       </span>
                     )}
                     {fileTypeFilter !== "all" && (
-                      <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-400 rounded-lg uppercase">
+                      <span className="px-2.5 py-0.5 bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 rounded-lg uppercase">
                         Tipo: {fileTypeFilter}
                       </span>
                     )}
                     {sortBy !== "recent" && (
-                      <span className="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-lg">
+                      <span className="px-2.5 py-0.5 bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 rounded-lg">
                         Orden: {sortBy}
                       </span>
                     )}
@@ -397,21 +400,34 @@ export default function AdminPage() {
                       {currentFolder ? `Subcarpetas en "${currentFolder.name}"` : "Carpetas Principales"} ({filteredFolders.length})
                     </span>
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredFolders.map((folder) => (
-                      <FolderCard
-                        key={folder.id}
-                        folder={folder}
-                        onClick={(f) => setCurrentFolder(f)}
-                        onEdit={(f) => {
-                          setFolderToEdit(f);
-                          setIsFolderModalOpen(true);
-                        }}
-                        onDelete={(f) => setDeleteCandidate({ id: f.id, type: "folder", name: f.name })}
-                        isAdmin={true}
-                      />
-                    ))}
-                  </div>
+                  {viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredFolders.map((folder) => (
+                        <FolderCard
+                          key={folder.id}
+                          folder={folder}
+                          onClick={(f) => setCurrentFolder(f)}
+                          onEdit={(f) => {
+                            setFolderToEdit(f);
+                            setIsFolderModalOpen(true);
+                          }}
+                          onDelete={(f) => setDeleteCandidate({ id: f.id, type: "folder", name: f.name })}
+                          isAdmin={true}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <FolderTable
+                      folders={filteredFolders}
+                      onClick={(f) => setCurrentFolder(f)}
+                      onEdit={(f) => {
+                        setFolderToEdit(f);
+                        setIsFolderModalOpen(true);
+                      }}
+                      onDelete={(f) => setDeleteCandidate({ id: f.id, type: "folder", name: f.name })}
+                      isAdmin={true}
+                    />
+                  )}
                 </div>
               )}
 

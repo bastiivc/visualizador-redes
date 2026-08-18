@@ -48,31 +48,31 @@ export default function FileCard({ file, folderName, onView, onEdit, onDelete, i
   };
 
   return (
-    <div className="group relative flex flex-col bg-slate-900/90 border border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 min-w-0">
+    <div className="group relative flex flex-col bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 shadow-sm dark:shadow-lg hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300 min-w-0">
       {/* Decorative Canvas Preview Header */}
-      <div className="relative w-full h-28 bg-slate-950 rounded-xl overflow-hidden mb-4 border border-slate-800/60 flex items-center justify-center group-hover:border-cyan-500/30 transition-colors">
+      <div className="relative w-full h-28 bg-slate-100 dark:bg-slate-950 rounded-xl overflow-hidden mb-4 border border-slate-200 dark:border-slate-800/60 flex items-center justify-center group-hover:border-cyan-500/30 transition-colors">
         <div className={`absolute inset-0 bg-gradient-to-br ${isPng ? "from-purple-500/10 via-pink-500/5" : "from-cyan-500/10 via-blue-500/5"} to-transparent opacity-60 group-hover:opacity-100 transition-opacity`} />
         
         {/* Format Specific Graphic Mock */}
         {isPng ? (
           <div className="relative flex flex-col items-center justify-center opacity-80 group-hover:scale-105 transition-transform">
-            <ImageIcon className="w-10 h-10 text-purple-400 mb-1" />
-            <span className="text-[10px] uppercase font-bold tracking-widest text-purple-300">Imagen PNG</span>
+            <ImageIcon className="w-10 h-10 text-purple-500 dark:text-purple-400 mb-1" />
+            <span className="text-[10px] uppercase font-bold tracking-widest text-purple-600 dark:text-purple-300">Imagen PNG</span>
           </div>
         ) : (
           <div className="relative flex items-center justify-center gap-6 opacity-75 group-hover:scale-105 transition-transform duration-300">
-            <div className="w-8 h-8 rounded-full bg-cyan-500/20 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 text-xs font-bold shadow-lg shadow-cyan-500/20">
+            <div className="w-8 h-8 rounded-full bg-cyan-500/20 border-2 border-cyan-500 dark:border-cyan-400 flex items-center justify-center text-cyan-600 dark:text-cyan-300 text-xs font-bold shadow-lg shadow-cyan-500/20">
               N1
             </div>
             <div className="w-10 h-0.5 bg-gradient-to-r from-cyan-400/60 to-indigo-400/60" />
-            <div className="w-9 h-9 rounded-full bg-indigo-500/20 border-2 border-indigo-400 flex items-center justify-center text-indigo-300 text-xs font-bold">
+            <div className="w-9 h-9 rounded-full bg-indigo-500/20 border-2 border-indigo-500 dark:border-indigo-400 flex items-center justify-center text-indigo-600 dark:text-indigo-300 text-xs font-bold">
               N2
             </div>
           </div>
         )}
 
         {/* Format Badge Pill */}
-        <span className={`absolute top-2.5 right-2.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded-md shadow-md ${isPng ? "bg-purple-500/20 border border-purple-500/30 text-purple-300" : "bg-cyan-500/20 border border-cyan-500/30 text-cyan-300"}`}>
+        <span className={`absolute top-2.5 right-2.5 px-2 py-0.5 text-[10px] font-bold uppercase rounded-md shadow-md ${isPng ? "bg-purple-500/20 border border-purple-500/30 text-purple-600 dark:text-purple-300" : "bg-cyan-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-300"}`}>
           {isPng ? "PNG" : "PyVis HTML"}
         </span>
 
@@ -92,33 +92,33 @@ export default function FileCard({ file, folderName, onView, onEdit, onDelete, i
       <div className="flex-1 min-w-0">
         {folderName && (
           <div className="mb-1">
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20">
               <Folder className="w-3 h-3 shrink-0" />
               <span className="truncate">{folderName}</span>
             </span>
           </div>
         )}
 
-        <h3 className="text-base font-semibold text-white group-hover:text-cyan-400 transition-colors mb-1">
+        <h3 className="text-base font-semibold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors mb-1">
           <HoverMarquee text={file.name} />
         </h3>
-        <p className="text-xs text-slate-400 line-clamp-2 min-h-[32px] mb-3">
+        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[32px] mb-3">
           {file.description || "Sin descripción."}
         </p>
 
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
-          <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-300">
-            <Calendar className="w-3 h-3 text-slate-500" />
+          <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300">
+            <Calendar className="w-3 h-3 text-slate-400 dark:text-slate-500" />
             {formatDate(file.createdAt)}
           </span>
-          <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-300">
-            <HardDrive className="w-3 h-3 text-cyan-400" />
+          <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300">
+            <HardDrive className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
             {formatBytes(file.fileSizeBytes)}
           </span>
           {file.nodeCount !== null && (
-            <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-950 border border-slate-800 rounded-lg text-slate-300">
-              <Cpu className="w-3 h-3 text-emerald-400" />
+            <span className="flex items-center gap-1 px-2.5 py-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-700 dark:text-slate-300">
+              <Cpu className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
               {file.nodeCount} nodos
             </span>
           )}
@@ -126,10 +126,10 @@ export default function FileCard({ file, folderName, onView, onEdit, onDelete, i
       </div>
 
       {/* Footer Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 text-xs">
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800/80 text-xs">
         <button
           onClick={() => onView(file)}
-          className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-medium rounded-xl transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 font-medium rounded-xl transition-colors"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>Visualizar</span>

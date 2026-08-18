@@ -148,13 +148,18 @@ export async function getFolders(parentId?: string | null): Promise<FolderWithSt
         rows = await db.select().from(schema.folders).orderBy(desc(schema.folders.createdAt));
       }
       
-      const allFiles = await db.select({ folderId: schema.files.folderId, fileSizeBytes: schema.files.fileSizeBytes }).from(schema.files);
+      const allFiles = await db.select({ folderId: schema.files.folderId, fileType: schema.files.fileType, fileSizeBytes: schema.files.fileSizeBytes }).from(schema.files);
       const counts: Record<string, number> = {};
       const sizes: Record<string, number> = {};
+      const htmlCounts: Record<string, number> = {};
+      const pngCounts: Record<string, number> = {};
+
       allFiles.forEach((f) => {
         if (f.folderId) {
           counts[f.folderId] = (counts[f.folderId] || 0) + 1;
           sizes[f.folderId] = (sizes[f.folderId] || 0) + (f.fileSizeBytes || 0);
+          if (f.fileType === "html") htmlCounts[f.folderId] = (htmlCounts[f.folderId] || 0) + 1;
+          if (f.fileType === "png") pngCounts[f.folderId] = (pngCounts[f.folderId] || 0) + 1;
         }
       });
 
@@ -162,6 +167,8 @@ export async function getFolders(parentId?: string | null): Promise<FolderWithSt
         ...folder,
         fileCount: counts[folder.id] || 0,
         totalSizeBytes: sizes[folder.id] || 0,
+        htmlCount: htmlCounts[folder.id] || 0,
+        pngCount: pngCounts[folder.id] || 0,
       }));
     } catch (err) {
       console.warn("Neon DB getFolders failed, using fallback:", err);
@@ -185,6 +192,8 @@ export async function getFolders(parentId?: string | null): Promise<FolderWithSt
         ...folder,
         fileCount: folderFiles.length,
         totalSizeBytes: folderFiles.reduce((acc, curr) => acc + (curr.fileSizeBytes || 0), 0),
+        htmlCount: folderFiles.filter((f) => f.fileType === "html").length,
+        pngCount: folderFiles.filter((f) => f.fileType === "png").length,
       };
     });
 }

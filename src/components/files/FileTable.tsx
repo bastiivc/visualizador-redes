@@ -46,18 +46,18 @@ export default function FileTable({ files, folderMap, onView, onEdit, onDelete, 
 
   if (files.length === 0) {
     return (
-      <div className="p-8 text-center bg-slate-900 border border-slate-800 rounded-2xl">
-        <p className="text-sm text-slate-400">No hay archivos guardados en esta ubicación.</p>
+      <div className="p-8 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm dark:shadow-md transition-colors">
+        <p className="text-sm text-slate-500 dark:text-slate-400">No hay archivos guardados en esta ubicación.</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full overflow-hidden bg-slate-900 border border-slate-800 rounded-2xl shadow-xl">
+    <div className="w-full overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-md dark:shadow-xl transition-colors">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
-            <tr className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+            <tr className="bg-slate-100/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 uppercase tracking-wider">
               <th className="py-3.5 px-4 font-semibold">Tipo</th>
               <th className="py-3.5 px-4 font-semibold">Nombre del Archivo</th>
               <th className="py-3.5 px-4 font-semibold hidden md:table-cell">Fecha de Subida</th>
@@ -65,14 +65,14 @@ export default function FileTable({ files, folderMap, onView, onEdit, onDelete, 
               <th className="py-3.5 px-4 font-semibold text-right">Acciones</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60 text-slate-300">
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60 text-slate-700 dark:text-slate-300">
             {files.map((file) => {
               const isPng = file.fileType === "png";
               const folderName = file.folderId && folderMap ? folderMap[file.folderId] : null;
               return (
-                <tr key={file.id} className="hover:bg-slate-800/40 transition-colors group">
+                <tr key={file.id} className="hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors group">
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold uppercase rounded-md ${isPng ? "bg-purple-500/10 border border-purple-500/20 text-purple-400" : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-400"}`}>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold uppercase rounded-md ${isPng ? "bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400" : "bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400"}`}>
                       {isPng ? <ImageIcon className="w-3.5 h-3.5" /> : <FileCode2 className="w-3.5 h-3.5" />}
                       <span>{isPng ? "PNG" : "HTML"}</span>
                     </span>
@@ -80,29 +80,29 @@ export default function FileTable({ files, folderMap, onView, onEdit, onDelete, 
 
                   <td className="py-3.5 px-4 max-w-xs">
                     {folderName && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 mb-0.5">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/20 mb-0.5">
                         <Folder className="w-3 h-3 shrink-0" />
                         <span className="truncate max-w-[120px]">{folderName}</span>
                       </span>
                     )}
-                    <div className="font-medium text-white group-hover:text-cyan-400 transition-colors">
+                    <div className="font-medium text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
                       <HoverMarquee text={file.name} />
                     </div>
                     {file.description && (
-                      <div className="text-[11px] text-slate-400 line-clamp-1 max-w-xs">{file.description}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 max-w-xs">{file.description}</div>
                     )}
                   </td>
 
-                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-400 hidden md:table-cell">
+                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 hidden md:table-cell">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                       <span>{formatDate(file.createdAt)}</span>
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-400 hidden sm:table-cell">
+                  <td className="py-3.5 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 hidden sm:table-cell">
                     <div className="flex items-center gap-1.5">
-                      <HardDrive className="w-3.5 h-3.5 text-cyan-400" />
+                      <HardDrive className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                       <span>{formatBytes(file.fileSizeBytes)}</span>
                     </div>
                   </td>
@@ -111,7 +111,7 @@ export default function FileTable({ files, folderMap, onView, onEdit, onDelete, 
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         onClick={() => onView(file)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 font-medium rounded-lg transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400 font-medium rounded-lg transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Visualizar</span>

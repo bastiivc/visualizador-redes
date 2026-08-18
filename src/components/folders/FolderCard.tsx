@@ -34,18 +34,18 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
   return (
     <div
       onClick={() => onClick(folder)}
-      className="group relative flex flex-col bg-slate-900/90 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-lg hover:shadow-2xl hover:shadow-cyan-500/10 cursor-pointer transition-all duration-300 min-w-0"
+      className="group relative flex flex-col bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover:border-cyan-500/50 rounded-2xl p-5 shadow-sm dark:shadow-lg hover:shadow-xl hover:shadow-cyan-500/10 cursor-pointer transition-all duration-300 min-w-0"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="p-3 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 rounded-2xl text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
+          <div className="p-3 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 dark:from-cyan-500/20 dark:to-blue-500/20 border border-cyan-500/30 rounded-2xl text-cyan-600 dark:text-cyan-400 group-hover:scale-105 transition-transform shrink-0">
             <Folder className="w-6 h-6 fill-cyan-500/20" />
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
               <HoverMarquee text={folder.name} />
             </h3>
-            <p className="text-[11px] text-slate-400 truncate">Creada el {formatDate(folder.createdAt)}</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">Creada el {formatDate(folder.createdAt)}</p>
           </div>
         </div>
 
@@ -55,10 +55,10 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
             onClick={handleDownloadZip}
             disabled={downloading}
             title="Descargar carpeta completa (.zip)"
-            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-colors disabled:opacity-50"
+            className="p-2 text-slate-400 dark:text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10 rounded-xl transition-colors disabled:opacity-50"
           >
             {downloading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-cyan-400" />
+              <Loader2 className="w-4 h-4 animate-spin text-cyan-500 dark:text-cyan-400" />
             ) : (
               <Download className="w-4 h-4" />
             )}
@@ -70,7 +70,7 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
                 <button
                   onClick={() => onEdit(folder)}
                   title="Editar Carpeta"
-                  className="p-1.5 text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
                 >
                   <Edit3 className="w-4 h-4" />
                 </button>
@@ -79,7 +79,7 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
                 <button
                   onClick={() => onDelete(folder)}
                   title="Eliminar Carpeta"
-                  className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                  className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -89,17 +89,17 @@ export default function FolderCard({ folder, onClick, onEdit, onDelete, isAdmin 
         </div>
       </div>
 
-      <p className="text-xs text-slate-400 line-clamp-2 min-h-[32px] mb-4">
+      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[32px] mb-4">
         {folder.description || "Sin descripción asignada."}
       </p>
 
-      <div className="flex items-center justify-between pt-3 border-t border-slate-800/80 text-xs">
-        <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-slate-300">
-          <FileCode2 className="w-3.5 h-3.5 text-cyan-400" />
+      <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-800/80 text-xs">
+        <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-full text-slate-700 dark:text-slate-300">
+          <FileCode2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
           {folder.fileCount || 0} archivos
         </span>
 
-        <span className="flex items-center gap-1 text-cyan-400 font-medium text-xs group-hover:translate-x-1 transition-transform">
+        <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-medium text-xs group-hover:translate-x-1 transition-transform">
           Abrir carpeta
           <ChevronRight className="w-4 h-4" />
         </span>
